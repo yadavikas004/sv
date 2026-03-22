@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit IV – Server Virtualization (VMware vSphere 6.7)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap');
+  :root {
+    --bg: #0f1117; --bg2: #161a24; --bg3: #1e2330; --border: #2a3045;
+    --text: #e2e8f0; --muted: #8892a4;
+    --purple: #a78bfa; --purple-dim: #6d4fc740;
+    --blue: #60a5fa; --blue-dim: #3b82f620;
+    --green: #34d399; --green-dim: #10b98120;
+    --orange: #fb923c; --orange-dim: #f9731620;
+    --red: #f87171; --red-dim: #ef444420;
+    --cyan: #22d3ee; --cyan-dim: #06b6d420;
+    --yellow: #fbbf24;
+    --rose: #fb7185; --rose-dim: #f43f5e20;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Sora', sans-serif; font-size: 15px; line-height: 1.7; }
+  .hero { background: linear-gradient(135deg, #0f1117 0%, #1a0d0d 50%, #0d0f1a 100%); border-bottom: 1px solid var(--border); padding: 48px 32px 36px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 60% -10%, #f43f5e28, transparent), radial-gradient(ellipse 60% 40% at 10% 100%, #7c3aed22, transparent); }
+  .hero-inner { max-width: 900px; margin: 0 auto; position: relative; }
+  .hero-badge { display: inline-block; background: var(--rose-dim); border: 1px solid #fb718555; color: var(--rose); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px; }
+  .hero h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 10px; }
+  .hero h1 span { color: var(--rose); }
+  .hero p { color: var(--muted); font-size: 14px; max-width: 600px; }
+  .hero-meta { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+  .hero-meta span { font-size: 12px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; }
+  .hero-meta span b { color: var(--text); }
+  .legend { max-width: 900px; margin: 24px auto; padding: 0 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px 60px; }
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .section-head .icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .section-head h2 { font-size: 18px; font-weight: 700; color: #fff; }
+  .section-head p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-bottom: 16px; }
+  .card:hover { border-color: #3a4060; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .card-title { font-size: 16px; font-weight: 700; color: #fff; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid #ef444440; }
+  .badge-orange { background: var(--orange-dim); color: var(--orange); border: 1px solid #f9731640; }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid #10b98140; }
+  .def-box { background: #1a1f30; border-left: 3px solid var(--rose); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0; font-size: 14px; }
+  .def-box strong { color: var(--rose); }
+  .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--bg3); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid #1e2330; color: var(--text); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1e2330; }
+  .code-box { background: #0d1117; border: 1px solid #2a3045; border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a5f3fc; overflow-x: auto; white-space: pre; line-height: 1.6; }
+  .code-box .cm { color: var(--muted); } .code-box .ky { color: var(--purple); } .code-box .st { color: var(--green); } .code-box .hl { color: var(--yellow); }
+  .tip { background: linear-gradient(135deg, #1a1a10, #1e1a10); border: 1px solid #fbbf2440; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+  .tip-icon { font-size: 16px; flex-shrink: 0; }
+  .tip-text { color: var(--text); }
+  .tip-text b { color: var(--yellow); }
+  ul.card-list { list-style: none; padding: 0; margin: 8px 0; }
+  ul.card-list li { padding: 4px 0 4px 18px; position: relative; font-size: 14px; }
+  ul.card-list li::before { content: '▸'; position: absolute; left: 0; color: var(--rose); font-size: 11px; top: 6px; }
+  .marks-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .marks-chip { font-size: 11px; font-weight: 600; background: var(--bg3); border: 1px solid var(--border); color: var(--muted); padding: 3px 10px; border-radius: 6px; }
+  .marks-chip span { color: var(--cyan); font-weight: 700; }
+  .hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media(max-width:580px){ .hgrid { grid-template-columns: 1fr; } }
+  .hcell { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .hcell h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .hcell p, .hcell ul { font-size: 13px; color: var(--muted); }
+  .flow-step { display: flex; align-items: flex-start; gap: 10px; padding: 8px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 4px; font-size: 13px; }
+  .flow-step .num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .flow-arrow { text-align: center; color: var(--border); font-size: 14px; margin: 2px 0; }
+  .toc { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin: 20px 0; }
+  .toc h3 { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  @media(max-width:560px){ .toc-grid { grid-template-columns: 1fr; } }
+  .toc-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 5px 8px; border-radius: 6px; text-decoration: none; }
+  .toc-link:hover { background: var(--bg3); }
+  .toc-link .tl { color: var(--rose); font-size: 11px; font-weight: 700; }
+  .powercli-box { background: #0a1a0a; border: 1px solid #166534; border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #86efac; overflow-x: auto; white-space: pre; line-height: 1.8; }
+  .powercli-box .cm { color: #4d7c0f; } .powercli-box .ky { color: #34d399; } .powercli-box .st { color: #fde68a; } .powercli-box .fn { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">MSc CS · Sem IV · Mumbai University</div>
+    <h1>Unit IV — <span>vMotion, Monitoring & PowerCLI</span></h1>
+    <p>Server Virtualization · VMware vSphere 6.7 · Exam Study Guide</p>
+    <div class="hero-meta">
+      <span>📋 <b>12 Marks</b> per question</span>
+      <span>✍️ <b>2 sub-questions</b> × 6 marks</span>
+      <span>📚 <b>3 Topics</b> covered</span>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> 🔴 Must Know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> 🟠 High Priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> 🟢 Good to Know</div>
+  </div>
+  <div class="toc">
+    <h3>Topics in Unit IV</h3>
+    <div class="toc-grid">
+      <a class="toc-link" href="#vmotion"><span class="tl">§1</span> vMotion — Live VM Migration</a>
+      <a class="toc-link" href="#svmotion"><span class="tl">§1</span> Storage vMotion & Cross-vCenter vMotion</a>
+      <a class="toc-link" href="#monitoring"><span class="tl">§2</span> Performance Monitoring & Alarms</a>
+      <a class="toc-link" href="#powercli"><span class="tl">§3</span> PowerCLI Automation</a>
+    </div>
+  </div>
+
+  <!-- ═══ vMOTION ═══ -->
+  <div class="section-head" id="vmotion">
+    <div class="icon" style="background:var(--rose-dim)">🔀</div>
+    <div><h2>vMotion — Live VM Migration</h2><p>Requirements · Process · CPU Masking · Enhanced vMotion Compatibility</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">What is vMotion?</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>vMotion</strong> enables <strong>live migration of a running VM</strong> from one ESXi host to another with <strong>zero downtime</strong> — users and applications experience no interruption. The VM's memory state, network connections, and storage are transferred transparently.</div>
+    <div class="code-box"><span class="cm">/* vMotion Process — Step by Step */</span>
+
+<span class="hl">Step 1:</span> Shadow VM created on destination host
+         ↓
+<span class="hl">Step 2:</span> VM memory pages copied to destination (iterative)
+         ↓
+<span class="hl">Step 3:</span> Memory pages modified during copy → added to dirty-page bitmap
+         ↓
+<span class="hl">Step 4:</span> Source VM quiesced for a brief moment (stun)
+         ↓
+<span class="hl">Step 5:</span> Remaining dirty pages copied (fast — very few left)
+         ↓
+<span class="hl">Step 6:</span> VM resumes on destination; source VM removed
+         ↓
+<span class="hl">Result:</span> Zero downtime — network connections maintained via RARP</div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> vMotion process is a classic 6-mark question. Cover: shadow VM creation → iterative memory copy → dirty pages → stun → resume on destination. Mention RARP for network notification.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">vMotion Requirements</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--rose)">Network Requirements</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Dedicated VMkernel port for vMotion on both hosts</li>
+          <li>Minimum 1 GbE network (10 GbE recommended)</li>
+          <li>Both hosts on the same L2 network (or routed vMotion)</li>
+          <li>Hosts must be able to ping each other's vMotion IP</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--blue)">Storage Requirements</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Shared storage accessible by both hosts (SAN/NAS/vSAN)</li>
+          <li>Or use Storage vMotion to migrate disk simultaneously</li>
+          <li>VM cannot be on local storage of source host (unless Storage vMotion)</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--green)">CPU Requirements</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>CPUs must be compatible (same vendor: Intel or AMD)</li>
+          <li>CPU features exposed to VM must be available on destination</li>
+          <li>Use CPU Masking or EVC to handle CPU differences</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--orange)">Other Requirements</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>vCenter Server required (manages the migration)</li>
+          <li>Both hosts in same vCenter (or use Cross-vCenter vMotion)</li>
+          <li>VMware Tools installed in VM (recommended)</li>
+          <li>VM must not have CD/DVD connected to local ISO</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">CPU Masking & Enhanced vMotion Compatibility (EVC)</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>CPU Masking</strong> hides specific CPU feature bits (CPUID) from VMs so they don't know which physical CPU features are available — enables vMotion between hosts with slightly different CPUs of the same family.</div>
+    <div class="def-box"><strong>EVC (Enhanced vMotion Compatibility)</strong> is a cluster-level setting that automatically configures CPU masking for ALL hosts and VMs in a cluster — ensuring vMotion compatibility across all hosts with different CPU steppings.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>CPU Masking</th><th>EVC</th></tr>
+      <tr><td>Scope</td><td>Per VM (manual)</td><td>Entire cluster (automatic)</td></tr>
+      <tr><td>Configuration</td><td>Edit VM settings → CPU → Advanced (CPUID mask)</td><td>Cluster Settings → EVC → Select CPU baseline</td></tr>
+      <tr><td>Use case</td><td>One-off migration between different CPU hosts</td><td>Mixed-CPU clusters needing cluster-wide vMotion</td></tr>
+      <tr><td>CPU vendor crossing</td><td>Cannot cross Intel ↔ AMD</td><td>Cannot cross Intel ↔ AMD</td></tr>
+      <tr><td>Ease of use</td><td>Complex — manual CPUID editing</td><td>Simple — select baseline (e.g., "Intel Nehalem")</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> EVC is preferred over per-VM CPU masking in production. Key rule: vMotion CANNOT migrate between Intel and AMD CPUs regardless of masking.</div></div>
+  </div>
+
+  <div class="section-head" id="svmotion">
+    <div class="icon" style="background:var(--orange-dim)">💾</div>
+    <div><h2>Storage vMotion & Cross-vCenter vMotion</h2></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Storage vMotion</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>Storage vMotion</strong> migrates a <strong>running VM's virtual disk files</strong> from one datastore to another with <strong>zero downtime</strong> — the VM continues to run while its VMDK is relocated.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>vMotion</th><th>Storage vMotion</th></tr>
+      <tr><td>What moves</td><td>VM compute state (memory, vCPU)</td><td>VM disk files (VMDKs)</td></tr>
+      <tr><td>VM state</td><td>Running during migration</td><td>Running during migration</td></tr>
+      <tr><td>Shared storage needed?</td><td>Yes (for disk)</td><td>No — moves FROM one datastore TO another</td></tr>
+      <tr><td>Use case</td><td>Load balance compute across hosts</td><td>Move VM from full datastore, storage maintenance</td></tr>
+      <tr><td>Network disruption</td><td>None (RARP sent)</td><td>None</td></tr>
+    </table></div>
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:700">Combined vMotion (host + storage simultaneously):</p>
+    <ul class="card-list">
+      <li>Move VM's compute AND storage simultaneously in a single operation</li>
+      <li>Useful when destination host doesn't share storage with source</li>
+      <li>Requires sufficient network bandwidth for both memory and disk transfer</li>
+    </ul>
+    <div class="marks-row">
+      <div class="marks-chip">Use case: <span>Storage maintenance, rebalancing, tiering</span></div>
+      <div class="marks-chip">Changed block tracking: <span>Tracks modified blocks during migration</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Cross-vCenter vMotion (vSphere 6.0+)</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Cross-vCenter vMotion</strong> allows migrating a running VM between ESXi hosts managed by <strong>different vCenter Server instances</strong> — even across geographic locations (Long Distance vMotion).</div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--rose)">Requirements</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Both vCenters in same SSO domain OR linked mode</li>
+          <li>Shared network between sites (for vMotion traffic)</li>
+          <li>vSphere Enterprise Plus license</li>
+          <li>RTT latency: &lt;150ms for regular, &lt;100ms for Long Distance</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--blue)">Use Cases</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Data center migration / consolidation</li>
+          <li>Workload mobility between clouds</li>
+          <li>Disaster avoidance (move before disaster)</li>
+          <li>Geographic load balancing</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Introduced: <span>vSphere 6.0</span></div>
+      <div class="marks-chip">Max latency: <span>150ms RTT</span></div>
+      <div class="marks-chip">License: <span>Enterprise Plus</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ MONITORING ═══ -->
+  <div class="section-head" id="monitoring">
+    <div class="icon" style="background:var(--blue-dim)">📊</div>
+    <div><h2>Performance Monitoring & Alarms</h2><p>Overview · Charts · Alarms · Scopes</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Performance Monitoring in vSphere</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>vSphere Performance Monitoring</strong> provides real-time and historical metrics for CPU, memory, disk, and network utilization across VMs, ESXi hosts, datastores, and clusters — via the vSphere Web Client's Performance tab.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Metric Category</th><th>Key Metrics to Monitor</th><th>Alert Threshold</th></tr>
+      <tr><td><b style="color:var(--rose)">CPU</b></td><td>CPU Usage %, CPU Ready, CPU Co-Stop</td><td>CPU Ready &gt;10% = problem</td></tr>
+      <tr><td><b style="color:var(--blue)">Memory</b></td><td>Memory Usage %, Balloon, Swap Rate, Active Memory</td><td>Ballooning &gt;0 = memory pressure; Swap &gt;0 = critical</td></tr>
+      <tr><td><b style="color:var(--green)">Disk (Storage)</b></td><td>Disk Read/Write IOPS, Disk Latency (ms), Disk Throughput</td><td>Latency &gt;20ms = concern</td></tr>
+      <tr><td><b style="color:var(--orange)">Network</b></td><td>Network Transmitted/Received (kbps), Dropped Packets</td><td>Dropped packets &gt;0 = NIC saturation</td></tr>
+    </table></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--rose)">Real-Time Charts</h4><p>20-second interval; last 1 hour of data; shown in Performance → Advanced tab in vSphere Client</p></div>
+      <div class="hcell"><h4 style="color:var(--blue)">Historical Charts</h4><p>Rolled up data: daily, weekly, monthly, yearly. Useful for capacity planning and trend analysis.</p></div>
+      <div class="hcell"><h4 style="color:var(--green)">Overview Charts</h4><p>Quick summary view for host/cluster; shows CPU, memory, disk, network in one panel</p></div>
+      <div class="hcell"><h4 style="color:var(--orange)">Advanced Charts</h4><p>Custom metric selection, time range, comparison of multiple objects — for deep-dive analysis</p></div>
+    </div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Know the 4 metric categories (CPU, Memory, Disk, Network) and what to look for. CPU Ready &gt;10% = over-provisioned; Memory balloon/swap = memory contention.</div></div>
+  </div>
+
+  <!-- CARD: Performance Charts -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">Performance Charts in vSphere</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Performance Charts</strong> are graphical views in the vSphere Web Client that visualize metric data (CPU, memory, disk, network) over time for any inventory object — VMs, hosts, clusters, datastores, or resource pools.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Chart Type</th><th>Time Range</th><th>Collection Interval</th><th>Best Used For</th></tr>
+      <tr><td><b style="color:var(--rose)">Real-Time</b></td><td>Last 1 hour</td><td>20 seconds</td><td>Live troubleshooting — immediate issue detection</td></tr>
+      <tr><td><b style="color:var(--blue)">Past Day</b></td><td>Last 24 hours</td><td>5 minutes (rolled up)</td><td>Spotting patterns within a day</td></tr>
+      <tr><td><b style="color:var(--green)">Past Week</b></td><td>Last 7 days</td><td>30 minutes (rolled up)</td><td>Weekly trend analysis</td></tr>
+      <tr><td><b style="color:var(--orange)">Past Month</b></td><td>Last 30 days</td><td>2 hours (rolled up)</td><td>Monthly capacity planning</td></tr>
+      <tr><td><b style="color:var(--purple)">Past Year</b></td><td>Last 365 days</td><td>1 day (rolled up)</td><td>Long-term growth trending</td></tr>
+    </table></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--rose)">Overview Chart</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Quick summary view of CPU, memory, disk, network in one panel</li>
+          <li>Available for hosts, VMs, clusters, datastores</li>
+          <li>No customization — preset metrics only</li>
+          <li>Good for quick health check</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--blue)">Advanced Chart</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Fully customizable — choose any metric, time range, object</li>
+          <li>Compare multiple VMs or hosts on same chart</li>
+          <li>Export chart data to CSV</li>
+          <li>Used for root cause analysis and capacity planning</li>
+        </ul>
+      </div>
+    </div>
+    <div class="code-box"><span class="cm">/* How to Access Performance Charts */</span>
+
+<span class="hl">1.</span> Select object in vSphere Client (VM / Host / Cluster / Datastore)
+<span class="hl">2.</span> Click <span class="st">"Monitor"</span> tab → <span class="st">"Performance"</span>
+<span class="hl">3.</span> Choose: Overview (quick) or Advanced (custom)
+<span class="hl">4.</span> In Advanced: click <span class="st">"Edit Chart Options"</span> → select metrics + time range
+<span class="hl">5.</span> Use <span class="st">"Export"</span> to download data as CSV for reporting</div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Know the 2 chart types: Overview (preset, quick) vs Advanced (custom, any metric). Know the 5 time ranges. Data is "rolled up" at longer intervals — real-time = 20 sec; past year = 1 day average.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Alarms in vSphere</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>Alarms</strong> are automated notifications triggered when specific conditions or thresholds are met in the vSphere environment — they alert administrators and optionally take automatic action.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Alarm Concept</th><th>Explanation</th></tr>
+      <tr><td><b style="color:var(--rose)">Alarm Definition</b></td><td>Configuration: trigger condition + action + target object type</td></tr>
+      <tr><td><b style="color:var(--blue)">Trigger</b></td><td>Condition that causes alarm to fire: metric threshold, event, or state change</td></tr>
+      <tr><td><b style="color:var(--green)">Action</b></td><td>What happens when alarm fires: send email, send SNMP trap, run script, power off VM, etc.</td></tr>
+      <tr><td><b style="color:var(--orange)">Alarm State</b></td><td>Normal (green) → Warning (yellow) → Alert (red)</td></tr>
+      <tr><td><b style="color:var(--purple)">Acknowledgment</b></td><td>Admin acknowledges alarm — stops repeated notifications but alarm remains until condition clears</td></tr>
+    </table></div>
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:700">Alarm Scopes (what objects alarms can monitor):</p>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--rose)">Host Alarms</h4><p>CPU usage, memory usage, host connection state, host hardware status (fans, temperature, power)</p></div>
+      <div class="hcell"><h4 style="color:var(--blue)">VM Alarms</h4><p>CPU/memory usage, VM power state, VMware Tools status, snapshot size</p></div>
+      <div class="hcell"><h4 style="color:var(--green)">Datastore Alarms</h4><p>Datastore usage (% full), datastore accessibility, I/O latency</p></div>
+      <div class="hcell"><h4 style="color:var(--orange)">Cluster/Network Alarms</h4><p>HA/DRS status, vSAN health, distributed switch errors</p></div>
+    </div>
+    <div class="code-box"><span class="cm">/* Creating an Alarm — Steps */</span>
+
+<span class="hl">1.</span> In vSphere Client → Select object (host/VM/cluster)
+<span class="hl">2.</span> Monitor tab → Alarm Definitions → Add
+<span class="hl">3.</span> Define: Name, Target Type (VM/Host/Datastore etc.)
+<span class="hl">4.</span> Set Triggers: metric threshold (e.g., CPU > 90% for 5 min)
+<span class="hl">5.</span> Set Actions: email notification / SNMP trap / run script
+<span class="hl">6.</span> Set Reporting: frequency of repeated notifications
+<span class="hl">7.</span> Save → Alarm is active and monitored by vCenter</div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Explain alarms in vSphere" = Definition + Trigger + Action + States (Normal/Warning/Alert) + Scope types. Know the steps to create an alarm. Very likely 6-mark sub-question.</div></div>
+  </div>
+
+  <!-- ═══ POWERCLI ═══ -->
+  <div class="section-head" id="powercli">
+    <div class="icon" style="background:var(--green-dim)">⚡</div>
+    <div><h2>Automating VMware vSphere — PowerCLI</h2><p>PowerShell · PowerCLI · Installation · Commands</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">What is PowerCLI?</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>VMware PowerCLI</strong> is a <strong>command-line tool built on PowerShell</strong> that allows administrators to <strong>automate and manage VMware vSphere environments</strong> using scripts and cmdlets — enabling bulk operations that would take hours in the GUI.</div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--green)">What you can automate</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Create, configure, start, stop VMs in bulk</li>
+          <li>Deploy VMs from templates at scale</li>
+          <li>Manage hosts, clusters, networks, storage</li>
+          <li>Generate reports on resource usage</li>
+          <li>Apply patches and updates</li>
+          <li>Manage snapshots across all VMs</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--rose)">Key advantages</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Automate repetitive tasks — save time</li>
+          <li>Consistent, error-free operations</li>
+          <li>Run against hundreds of VMs/hosts</li>
+          <li>Schedule tasks (with Windows Task Scheduler)</li>
+          <li>Works across vCenter, NSX, vSAN, Horizon</li>
+          <li>Open-source community modules on PowerShell Gallery</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Based on: <span>Windows PowerShell / PowerShell Core</span></div>
+      <div class="marks-chip">Cmdlet count: <span>700+ cmdlets</span></div>
+      <div class="marks-chip">License: <span>Free (from VMware)</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">PowerShell vs PowerCLI</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>PowerShell</th><th>PowerCLI</th></tr>
+      <tr><td>Made by</td><td>Microsoft</td><td>VMware (built on PowerShell)</td></tr>
+      <tr><td>Purpose</td><td>General Windows/cross-platform automation</td><td>VMware vSphere-specific automation</td></tr>
+      <tr><td>Cmdlets</td><td>General OS/app cmdlets (Get-Process, Set-Item etc.)</td><td>VMware-specific (Get-VM, New-VM, Connect-VIServer etc.)</td></tr>
+      <tr><td>Requires</td><td>Windows or PowerShell Core</td><td>PowerShell + VMware PowerCLI module installed</td></tr>
+      <tr><td>Connection</td><td>No vSphere awareness</td><td>Connect-VIServer — connects to vCenter or ESXi host</td></tr>
+      <tr><td>Object types</td><td>Windows objects</td><td>VMware objects (VM, Host, Cluster, Datastore, Network)</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Compare PowerShell and PowerCLI" = table above + key point: PowerCLI extends PowerShell with VMware-specific cmdlets and a connection to vCenter via Connect-VIServer.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Installing PowerCLI — Windows, macOS, Linux</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>PowerCLI is now distributed as a PowerShell module</strong> via the PowerShell Gallery — no separate installer needed. Requires PowerShell (Windows) or PowerShell Core (macOS/Linux).</div>
+
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:700">Installation on Windows:</p>
+    <div class="powercli-box"><span class="cm"># Step 1: Install PowerShell (comes pre-installed on Windows)</span>
+<span class="cm"># Step 2: Install PowerCLI from PowerShell Gallery</span>
+<span class="fn">Install-Module</span> <span class="ky">-Name</span> VMware.PowerCLI <span class="ky">-Scope</span> CurrentUser
+<span class="cm"># Step 3: Trust the repository if prompted</span>
+<span class="cm"># Step 4: Verify installation</span>
+<span class="fn">Get-Module</span> VMware.PowerCLI <span class="ky">-ListAvailable</span></div>
+
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:700">Installation on macOS / Linux:</p>
+    <div class="powercli-box"><span class="cm"># Step 1: Install PowerShell Core (open source)</span>
+<span class="cm"># macOS (via Homebrew):</span>
+brew install <span class="st">--cask</span> powershell
+<span class="cm"># Linux (Ubuntu):</span>
+sudo apt-get install <span class="ky">-y</span> powershell
+
+<span class="cm"># Step 2: Launch PowerShell</span>
+pwsh
+
+<span class="cm"># Step 3: Install PowerCLI module (same as Windows)</span>
+<span class="fn">Install-Module</span> <span class="ky">-Name</span> VMware.PowerCLI <span class="ky">-Scope</span> CurrentUser</div>
+
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Installation steps are directly asked. Remember: PowerCLI is installed as a module via Install-Module cmdlet. Same command works on all platforms once PowerShell/pwsh is installed.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Essential PowerCLI Commands</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="powercli-box"><span class="cm"># ── Connect to vCenter Server ──</span>
+<span class="fn">Connect-VIServer</span> <span class="ky">-Server</span> <span class="st">"vcenter.lab.local"</span> <span class="ky">-User</span> <span class="st">"<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7f1e1b1216113f090c0f171a0d1a5113101c1e13">[email&#160;protected]</a>"</span> <span class="ky">-Password</span> <span class="st">"P@ssw0rd"</span>
+
+<span class="cm"># ── Get all VMs ──</span>
+<span class="fn">Get-VM</span>
+
+<span class="cm"># ── Get a specific VM ──</span>
+<span class="fn">Get-VM</span> <span class="ky">-Name</span> <span class="st">"WebServer01"</span>
+
+<span class="cm"># ── Power on / off a VM ──</span>
+<span class="fn">Start-VM</span> <span class="ky">-VM</span> <span class="st">"WebServer01"</span>
+<span class="fn">Stop-VM</span>  <span class="ky">-VM</span> <span class="st">"WebServer01"</span> <span class="ky">-Confirm:$false</span>
+
+<span class="cm"># ── Create a new VM ──</span>
+<span class="fn">New-VM</span> <span class="ky">-Name</span> <span class="st">"NewVM"</span> <span class="ky">-VMHost</span> <span class="st">"esxi01.lab.local"</span> <span class="ky">-Datastore</span> <span class="st">"DS01"</span> <span class="ky">-NumCPU</span> 2 <span class="ky">-MemoryGB</span> 4
+
+<span class="cm"># ── Migrate (vMotion) a VM ──</span>
+<span class="fn">Move-VM</span> <span class="ky">-VM</span> <span class="st">"WebServer01"</span> <span class="ky">-Destination</span> (<span class="fn">Get-VMHost</span> <span class="st">"esxi02.lab.local"</span>)
+
+<span class="cm"># ── Get all ESXi hosts ──</span>
+<span class="fn">Get-VMHost</span>
+
+<span class="cm"># ── Get all Datastores ──</span>
+<span class="fn">Get-Datastore</span>
+
+<span class="cm"># ── Create snapshot ──</span>
+<span class="fn">New-Snapshot</span> <span class="ky">-VM</span> <span class="st">"WebServer01"</span> <span class="ky">-Name</span> <span class="st">"Pre-Patch"</span> <span class="ky">-Memory</span> <span class="ky">-Quiesce</span>
+
+<span class="cm"># ── Disconnect from vCenter ──</span>
+<span class="fn">Disconnect-VIServer</span> <span class="ky">-Confirm:$false</span></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Know Connect-VIServer, Get-VM, Start-VM, Stop-VM, New-VM, Move-VM, Get-VMHost, New-Snapshot. These are the most commonly asked PowerCLI commands. Pattern: Verb-Noun (Get, New, Set, Remove, Start, Stop, Move).</div></div>
+    <div class="marks-row">
+      <div class="marks-chip">Naming convention: <span>Verb-Noun (PowerShell standard)</span></div>
+      <div class="marks-chip">Connect first: <span>Always Connect-VIServer before any cmdlet</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">PowerCLI Scripting — Practical Examples</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:8px">Bulk operations — the real power of PowerCLI:</p>
+    <div class="powercli-box"><span class="cm"># Power on ALL VMs in a folder</span>
+<span class="fn">Get-VM</span> <span class="ky">-Location</span> <span class="st">"Production"</span> | <span class="fn">Start-VM</span>
+
+<span class="cm"># Report CPU and Memory for all VMs</span>
+<span class="fn">Get-VM</span> | <span class="fn">Select-Object</span> Name, NumCPU, MemoryGB, PowerState | <span class="fn">Export-CSV</span> <span class="st">"vm_report.csv"</span>
+
+<span class="cm"># Take snapshot of all powered-on VMs</span>
+<span class="fn">Get-VM</span> | <span class="fn">Where-Object</span> {$_.PowerState <span class="ky">-eq</span> <span class="st">"PoweredOn"</span>} | <span class="fn">New-Snapshot</span> <span class="ky">-Name</span> <span class="st">"Weekly-Backup"</span>
+
+<span class="cm"># Find VMs with snapshots older than 7 days</span>
+<span class="fn">Get-VM</span> | <span class="fn">Get-Snapshot</span> | <span class="fn">Where-Object</span> {$_.Created <span class="ky">-lt</span> (Get-Date).AddDays(-7)}</div>
+  </div>
+
+  <!-- ═══ QUICK REVISION ═══ -->
+  <div class="section-head">
+    <div class="icon" style="background:var(--orange-dim)">📋</div>
+    <div><h2>Quick Revision — Unit IV at a Glance</h2></div>
+  </div>
+  <div class="card" style="border-color:#fb718555">
+    <div class="card-title" style="margin-bottom:14px">🔑 Keywords & One-Liners</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Term</th><th>One-Line Answer</th></tr>
+      <tr><td><b>vMotion</b></td><td>Live migration of running VM between ESXi hosts with zero downtime</td></tr>
+      <tr><td><b>RARP</b></td><td>Reverse ARP — network notified of VM's new location after vMotion</td></tr>
+      <tr><td><b>CPU Masking</b></td><td>Hides CPU feature bits from VMs to enable vMotion between different CPU hosts</td></tr>
+      <tr><td><b>EVC</b></td><td>Enhanced vMotion Compatibility — cluster-level CPU masking baseline for all hosts</td></tr>
+      <tr><td><b>Storage vMotion</b></td><td>Live migration of VM's disk files between datastores; VM stays running</td></tr>
+      <tr><td><b>Cross-vCenter vMotion</b></td><td>Migrate running VM between different vCenter instances; max 150ms RTT</td></tr>
+      <tr><td><b>CPU Ready</b></td><td>Time VM waits for physical CPU; &gt;10% = problem</td></tr>
+      <tr><td><b>Memory Balloon</b></td><td>Memory reclamation technique; &gt;0 means memory pressure on host</td></tr>
+      <tr><td><b>Alarm Trigger</b></td><td>Condition (metric/event/state) that fires an alarm</td></tr>
+      <tr><td><b>Alarm Action</b></td><td>Response to alarm: email, SNMP trap, run script, power off VM</td></tr>
+      <tr><td><b>Alarm States</b></td><td>Normal (green) → Warning (yellow) → Alert (red)</td></tr>
+      <tr><td><b>PowerCLI</b></td><td>VMware's PowerShell module for automating vSphere management</td></tr>
+      <tr><td><b>Connect-VIServer</b></td><td>PowerCLI cmdlet to connect to vCenter or ESXi host</td></tr>
+      <tr><td><b>Get-VM</b></td><td>PowerCLI — retrieves VM objects from connected vCenter</td></tr>
+      <tr><td><b>New-VM</b></td><td>PowerCLI — creates a new virtual machine</td></tr>
+      <tr><td><b>Move-VM</b></td><td>PowerCLI — performs vMotion (live migration) of a VM</td></tr>
+      <tr><td><b>Install-Module</b></td><td>PowerShell cmdlet to install PowerCLI from PowerShell Gallery</td></tr>
+    </table></div>
+  </div>
+  <div class="card" style="border-color:#fb718555">
+    <div class="card-top"><div class="card-title">🎯 Most Likely Exam Questions — Unit IV</div><span class="badge badge-red">🔴 Study These</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>#</th><th>Question</th><th>Key Points</th></tr>
+      <tr><td>1</td><td>Explain vMotion and its working process</td><td>Definition + 6-step process (shadow → copy → dirty pages → stun → resume) + RARP</td></tr>
+      <tr><td>2</td><td>What are vMotion requirements?</td><td>Network (VMkernel port, GbE) + Shared storage + Compatible CPU + vCenter required</td></tr>
+      <tr><td>3</td><td>Explain CPU Masking and EVC</td><td>CPU Masking = per VM; EVC = cluster-wide; table comparison; cannot cross Intel↔AMD</td></tr>
+      <tr><td>4</td><td>Compare vMotion vs Storage vMotion</td><td>What moves (compute vs disk) + shared storage requirement + use case</td></tr>
+      <tr><td>5</td><td>What is Cross-vCenter vMotion? What are its requirements?</td><td>Between different vCenters + same SSO domain + &lt;150ms RTT + Enterprise Plus</td></tr>
+      <tr><td>6</td><td>Explain alarms in vSphere — scopes, creation, management</td><td>Trigger + Action + States + 4 scope types + creation steps</td></tr>
+      <tr><td>7</td><td>What is PowerCLI? How is it installed on Windows, macOS, Linux?</td><td>Definition + Install-Module command + platform differences</td></tr>
+      <tr><td>8</td><td>Compare PowerShell and PowerCLI</td><td>Table: maker, purpose, cmdlets, connection, object types</td></tr>
+      <tr><td>9</td><td>Write PowerCLI commands to: connect, get VMs, create VM, vMotion, snapshot</td><td>Connect-VIServer, Get-VM, New-VM, Move-VM, New-Snapshot with parameters</td></tr>
+    </table></div>
+  </div>
+
+  <!-- ═══ MASTER STRATEGY ═══ -->
+  <div class="section-head">
+    <div class="icon" style="background:var(--purple-dim)">🏆</div>
+    <div><h2>Exam Strategy — All 4 Units</h2></div>
+  </div>
+  <div class="card" style="border-color:#a78bfa55">
+    <div class="card-title" style="margin-bottom:16px">📌 Final Exam Tips</div>
+    <div class="hgrid">
+      <div class="hcell">
+        <h4 style="color:var(--purple)">Unit I Power Topics</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>ESXi Architecture + Components (diagram)</li>
+          <li>3 Installation Methods (Interactive/Unattended/AutoDeploy)</li>
+          <li>vCenter SSO workflow (5-step flow)</li>
+          <li>PSC components (8 services + 2 topologies)</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--green)">Unit II Power Topics</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Virtual vs Physical Switch (table)</li>
+          <li>vSphere HA (master/slave + failover flow)</li>
+          <li>HA vs FT vs DRS (comparison table)</li>
+          <li>RBAC: Role + Privilege + Object</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--blue)">Unit III Power Topics</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>VM Internals & Externals (files + hardware)</li>
+          <li>Memory Technologies (TPS→Balloon→Compress→Swap)</li>
+          <li>Shares / Reservation / Limit</li>
+          <li>OVF vs OVA + deploy/export/examine</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--rose)">Unit IV Power Topics</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>vMotion process (6 steps + RARP)</li>
+          <li>EVC vs CPU Masking</li>
+          <li>Alarms (trigger + action + states + scope)</li>
+          <li>PowerCLI installation + key commands</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip" style="margin-top:14px"><div class="tip-icon">🏆</div><div class="tip-text"><b>Golden Rule:</b> For every 6-mark answer — write a Definition (1 mark) + Diagram/Table (2 marks) + 4 key points (2 marks) + Exam tip/use ca

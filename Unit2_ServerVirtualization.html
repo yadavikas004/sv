@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit II – Server Virtualization (VMware vSphere 6.7)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap');
+  :root {
+    --bg: #0f1117; --bg2: #161a24; --bg3: #1e2330; --border: #2a3045;
+    --text: #e2e8f0; --muted: #8892a4;
+    --purple: #a78bfa; --purple-dim: #6d4fc740;
+    --blue: #60a5fa; --blue-dim: #3b82f620;
+    --green: #34d399; --green-dim: #10b98120;
+    --orange: #fb923c; --orange-dim: #f9731620;
+    --red: #f87171; --red-dim: #ef444420;
+    --cyan: #22d3ee; --cyan-dim: #06b6d420;
+    --yellow: #fbbf24; --teal: #2dd4bf; --teal-dim: #14b8a620;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Sora', sans-serif; font-size: 15px; line-height: 1.7; }
+  .hero { background: linear-gradient(135deg, #0f1117 0%, #0d1a15 50%, #0f1a2e 100%); border-bottom: 1px solid var(--border); padding: 48px 32px 36px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 60% -10%, #059669, transparent), radial-gradient(ellipse 60% 40% at 10% 100%, #1d4ed822, transparent); opacity: 0.15; }
+  .hero-inner { max-width: 900px; margin: 0 auto; position: relative; }
+  .hero-badge { display: inline-block; background: var(--teal-dim); border: 1px solid #2dd4bf55; color: var(--teal); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px; }
+  .hero h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 10px; }
+  .hero h1 span { color: var(--teal); }
+  .hero p { color: var(--muted); font-size: 14px; max-width: 600px; }
+  .hero-meta { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+  .hero-meta span { font-size: 12px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; }
+  .hero-meta span b { color: var(--text); }
+  .legend { max-width: 900px; margin: 24px auto; padding: 0 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px 60px; }
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .section-head .icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .section-head h2 { font-size: 18px; font-weight: 700; color: #fff; }
+  .section-head p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-bottom: 16px; position: relative; transition: border-color 0.2s; }
+  .card:hover { border-color: #3a4060; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .card-title { font-size: 16px; font-weight: 700; color: #fff; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; letter-spacing: 0.5px; }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid #ef444440; }
+  .badge-orange { background: var(--orange-dim); color: var(--orange); border: 1px solid #f9731640; }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid #10b98140; }
+  .def-box { background: #1a1f30; border-left: 3px solid var(--teal); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0; font-size: 14px; color: var(--text); }
+  .def-box strong { color: var(--teal); }
+  .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--bg3); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid #1e2330; color: var(--text); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1e2330; }
+  .code-box { background: #0d1117; border: 1px solid #2a3045; border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a5f3fc; overflow-x: auto; white-space: pre; line-height: 1.6; }
+  .code-box .cm { color: var(--muted); } .code-box .ky { color: var(--purple); } .code-box .st { color: var(--green); } .code-box .hl { color: var(--yellow); }
+  .tip { background: linear-gradient(135deg, #1a1a10, #1e1a10); border: 1px solid #fbbf2440; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+  .tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .tip-text { color: var(--text); }
+  .tip-text b { color: var(--yellow); }
+  ul.card-list { list-style: none; padding: 0; margin: 8px 0; }
+  ul.card-list li { padding: 4px 0 4px 18px; position: relative; font-size: 14px; color: var(--text); }
+  ul.card-list li::before { content: '▸'; position: absolute; left: 0; color: var(--teal); font-size: 11px; top: 6px; }
+  .marks-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .marks-chip { font-size: 11px; font-weight: 600; background: var(--bg3); border: 1px solid var(--border); color: var(--muted); padding: 3px 10px; border-radius: 6px; }
+  .marks-chip span { color: var(--cyan); font-weight: 700; }
+  .hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media(max-width:580px){ .hgrid { grid-template-columns: 1fr; } }
+  .hcell { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .hcell h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .hcell p, .hcell ul { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; background: var(--bg3); border: 1px solid var(--border); color: var(--muted); padding: 2px 8px; border-radius: 4px; margin: 2px; }
+  .flow { margin: 14px 0; }
+  .flow-step { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 4px; font-size: 13px; }
+  .flow-step .num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .flow-arrow { text-align: center; color: var(--border); font-size: 14px; margin: 2px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media(max-width:600px){ .two-col { grid-template-columns: 1fr; } }
+  .toc { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin: 20px 0; }
+  .toc h3 { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  @media(max-width:560px){ .toc-grid { grid-template-columns: 1fr; } }
+  .toc-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 5px 8px; border-radius: 6px; text-decoration: none; transition: background 0.15s; }
+  .toc-link:hover { background: var(--bg3); }
+  .toc-link .tl { color: var(--teal); font-size: 11px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">MSc CS · Sem IV · Mumbai University</div>
+    <h1>Unit II — <span>Networking, Storage, HA & Security</span></h1>
+    <p>Server Virtualization · VMware vSphere 6.7 · Exam Study Guide</p>
+    <div class="hero-meta">
+      <span>📋 <b>12 Marks</b> per question</span>
+      <span>✍️ <b>2 sub-questions</b> × 6 marks</span>
+      <span>📚 <b>5 Topics</b> covered</span>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> 🔴 Must Know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> 🟠 High Priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> 🟢 Good to Know</div>
+  </div>
+  <div class="toc">
+    <h3>Topics in Unit II</h3>
+    <div class="toc-grid">
+      <a class="toc-link" href="#vum"><span class="tl">§1</span> vSphere Update Manager (VUM)</a>
+      <a class="toc-link" href="#networking"><span class="tl">§2</span> vSphere Networking (Standard Switches, VLANs, NIC Teaming)</a>
+      <a class="toc-link" href="#storage"><span class="tl">§3</span> vSphere Storage (Shared, RAID, vSAN)</a>
+      <a class="toc-link" href="#ha"><span class="tl">§4</span> High Availability & Business Continuity</a>
+      <a class="toc-link" href="#security"><span class="tl">§5</span> Securing VMware vSphere</a>
+    </div>
+  </div>
+
+  <!-- ═══ VUM ═══ -->
+  <div class="section-head" id="vum">
+    <div class="icon" style="background:var(--teal-dim)">🔄</div>
+    <div><h2>vSphere Update Manager (VUM)</h2><p>Patching, upgrading, and managing ESXi hosts and VMs</p></div>
+  </div>
+  <div class="card">
+    <div class="card-top"><div class="card-title">What is VUM?</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>VUM (vSphere Update Manager)</strong> is a VMware tool integrated with vCenter Server that <strong>automates patching and upgrading</strong> of ESXi hosts, VMware Tools, and VM hardware versions. It ensures the environment stays compliant, secure, and up to date.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>Description</th></tr>
+      <tr><td><b style="color:var(--teal)">Baseline</b></td><td>A collection of patches/upgrades VUM uses to check compliance</td></tr>
+      <tr><td><b style="color:var(--blue)">Scan</b></td><td>Checks hosts/VMs against baselines to find what's missing</td></tr>
+      <tr><td><b style="color:var(--green)">Stage</b></td><td>Downloads patches to the host before remediation (reduces downtime)</td></tr>
+      <tr><td><b style="color:var(--orange)">Remediate</b></td><td>Applies patches; host enters maintenance mode → reboots → exits maintenance mode</td></tr>
+      <tr><td><b style="color:var(--purple)">Compliance</b></td><td>Compliant / Non-Compliant / Unknown — status after scan</td></tr>
+    </table></div>
+    <div class="code-box"><span class="cm">/* VUM Remediation Workflow */</span>
+
+<span class="hl">Attach Baseline → Scan → Check Compliance</span>
+         ↓
+<span class="hl">Stage Patches (optional, pre-download)</span>
+         ↓
+<span class="hl">Remediate → Host enters Maintenance Mode</span>
+         ↓
+<span class="hl">Patches Applied → Host Reboots</span>
+         ↓
+<span class="hl">Host exits Maintenance Mode → Compliant ✓</span></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Know the 4 key operations: Scan → Stage → Remediate → Compliance check. Also mention: VUM is integrated into vCenter from vSphere 6.5+; no separate install needed in 6.7.</div></div>
+    <div class="marks-row">
+      <div class="marks-chip">VUM in 6.7: <span>Integrated into vCenter (VCSA)</span></div>
+      <div class="marks-chip">Remediation: <span>Requires Maintenance Mode</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-top"><div class="card-title">VUM Baselines & Baseline Groups</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--teal)">Patch Baseline</h4><p>Contains a set of patches for ESXi hosts. Can be dynamic (auto-update) or fixed.</p></div>
+      <div class="hcell"><h4 style="color:var(--blue)">Upgrade Baseline</h4><p>Used to upgrade ESXi host version (e.g., 6.5 → 6.7) or VM hardware version.</p></div>
+      <div class="hcell"><h4 style="color:var(--orange)">Extension Baseline</h4><p>Adds third-party software or drivers (extensions) to ESXi hosts.</p></div>
+      <div class="hcell"><h4 style="color:var(--green)">Baseline Group</h4><p>Combines multiple baselines (patch + upgrade + extension) into one group for unified remediation.</p></div>
+    </div>
+  </div>
+
+  <!-- ═══ NETWORKING ═══ -->
+  <div class="section-head" id="networking">
+    <div class="icon" style="background:var(--blue-dim)">🌐</div>
+    <div><h2>vSphere Networking</h2><p>Standard Switches · VLANs · NIC Teaming · VMkernel · TCP/IP Stacks</p></div>
+  </div>
+  <div class="card">
+    <div class="card-top"><div class="card-title">Virtual Switch (vSwitch) vs Physical Switch</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>Virtual Switch (vSwitch)</strong> is a software-based layer-2 switch in ESXi that connects VMs to each other and to physical networks. It forwards traffic based on MAC addresses — just like a physical switch, but runs in software.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>Virtual Switch (vSwitch)</th><th>Physical Switch</th></tr>
+      <tr><td>Location</td><td>Inside ESXi hypervisor (software)</td><td>Physical hardware device</td></tr>
+      <tr><td>Management</td><td>vSphere Client / CLI</td><td>CLI / dedicated management interface</td></tr>
+      <tr><td>Port types</td><td>VM Port Groups, VMkernel ports, Uplinks</td><td>Access, Trunk, LACP ports</td></tr>
+      <tr><td>VLAN support</td><td>Yes (VLAN tagging on port groups)</td><td>Yes (native)</td></tr>
+      <tr><td>Spanning Tree</td><td>Not needed (no loops possible)</td><td>Required (STP/RSTP)</td></tr>
+      <tr><td>Traffic visibility</td><td>Promiscuous mode for monitoring</td><td>Port mirroring / SPAN</td></tr>
+      <tr><td>Cost</td><td>Zero (software)</td><td>Hardware cost</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Compare virtual and physical switch" is a common 6-mark question. Use the table above — cover at least 5 differences. Always mention: vSwitch has no spanning tree because loops are impossible in a software switch.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Standard Switch (vSS) Architecture</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="code-box"><span class="cm">/* vSphere Standard Switch Architecture */</span>
+
+<span class="hl">         Virtual Machines</span>
+<span class="hl">    VM1    VM2    VM3    VM4</span>
+<span class="hl">     │      │      │      │</span>
+<span class="hl">  ┌──▼──────▼──────▼──────▼──────────────┐</span>
+<span class="hl">  │        VM Port Group                  │  ← VMs connect here</span>
+<span class="hl">  ├───────────────────────────────────────┤</span>
+<span class="hl">  │      vSphere Standard Switch (vSS)    │</span>
+<span class="hl">  ├───────────────────────────────────────┤</span>
+<span class="hl">  │   VMkernel Port  │  VMkernel Port     │  ← Management/vMotion/iSCSI</span>
+<span class="hl">  ├───────────────────────────────────────┤</span>
+<span class="hl">  │    Uplink (vmnic0)  │  Uplink (vmnic1) │  ← Physical NICs</span>
+<span class="hl">  └────────────┬────────────────┬──────────┘</span>
+<span class="hl">          Physical NIC      Physical NIC</span>
+<span class="hl">               └────────────────┘</span>
+<span class="hl">             Physical Network / Switch</span></div>
+    <div class="tbl-wrap" style="margin-top:12px"><table>
+      <tr><th>Component</th><th>Purpose</th></tr>
+      <tr><td><b style="color:var(--teal)">VM Port Group</b></td><td>Logical grouping of VM network ports with shared policy (VLAN, security, teaming)</td></tr>
+      <tr><td><b style="color:var(--blue)">VMkernel Port</b></td><td>Used for ESXi host traffic: Management, vMotion, iSCSI, FT logging, vSAN</td></tr>
+      <tr><td><b style="color:var(--green)">Uplink (vmnic)</b></td><td>Physical NIC of the ESXi host connected to physical network switch</td></tr>
+      <tr><td><b style="color:var(--orange)">Port Group</b></td><td>Container for ports with shared network policy applied to all VMs in it</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">VMkernel Networking & TCP/IP Stacks</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>VMkernel port</strong> carries ESXi host's own network traffic (not VM traffic). Each VMkernel port is assigned a specific service.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>VMkernel Service</th><th>Purpose</th><th>Required for</th></tr>
+      <tr><td><b style="color:var(--teal)">Management</b></td><td>ESXi host management traffic</td><td>vCenter communication, SSH, DCUI</td></tr>
+      <tr><td><b style="color:var(--blue)">vMotion</b></td><td>Live VM migration traffic</td><td>vMotion (live migration)</td></tr>
+      <tr><td><b style="color:var(--green)">iSCSI</b></td><td>Storage traffic over IP network</td><td>Software iSCSI initiator</td></tr>
+      <tr><td><b style="color:var(--orange)">Fault Tolerance</b></td><td>FT logging traffic between primary and secondary VMs</td><td>vSphere FT</td></tr>
+      <tr><td><b style="color:var(--purple)">vSAN</b></td><td>vSAN cluster communication</td><td>VMware vSAN</td></tr>
+      <tr><td><b style="color:var(--cyan)">NFC (Provisioning)</b></td><td>VM cloning, snapshot, migration</td><td>Storage vMotion, cloning</td></tr>
+    </table></div>
+    <div class="def-box" style="margin-top:12px"><strong>TCP/IP Stacks:</strong> vSphere 6.x introduced multiple TCP/IP stacks, allowing different traffic types to use separate routing tables, DNS, and gateways.<br><br>
+    • <strong>Default Stack</strong> — Management, vMotion (default)<br>
+    • <strong>vMotion Stack</strong> — Dedicated stack for vMotion traffic only<br>
+    • <strong>Provisioning Stack</strong> — NFC traffic (cloning, snapshots)<br>
+    • <strong>Custom Stacks</strong> — For third-party solutions</div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> TCP/IP Stacks is a unique vSphere 6.x feature — mention it to score extra. Key point: each stack has its own routing table and DNS, allowing isolation of traffic types.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">VLANs in vSphere</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>VLAN (Virtual LAN)</strong> segments network traffic within a vSwitch, providing isolation between groups of VMs without needing separate physical switches.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>VLAN Mode</th><th>How it Works</th><th>VLAN Tag on Port Group</th></tr>
+      <tr><td><b style="color:var(--teal)">No VLAN (0)</b></td><td>All traffic passes untagged — VMs share one broadcast domain</td><td>0 (none)</td></tr>
+      <tr><td><b style="color:var(--blue)">VLAN (1–4094)</b></td><td>ESXi tags/untags frames — VMs use specific VLAN</td><td>1–4094</td></tr>
+      <tr><td><b style="color:var(--orange)">VLAN Trunking (4095)</b></td><td>All VLANs pass through — VM OS handles tagging (for routers, firewalls in VMs)</td><td>4095</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Remember VLAN ID 4095 = trunk mode (all VLANs). This is tested as a tricky MCQ or short answer.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">NIC Teaming & Load Balancing</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>NIC Teaming</strong> = connecting multiple physical NICs (uplinks) to a single vSwitch for <strong>redundancy</strong> and/or <strong>load balancing</strong>. If one NIC fails, traffic automatically switches to the other.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Load Balancing Policy</th><th>How It Works</th></tr>
+      <tr><td><b style="color:var(--teal)">Route based on originating port ID</b></td><td>Default — each VM uses one uplink based on its virtual port (simple, no switch config needed)</td></tr>
+      <tr><td><b style="color:var(--blue)">Route based on source MAC hash</b></td><td>VM's MAC address determines which uplink — consistent per VM</td></tr>
+      <tr><td><b style="color:var(--green)">Route based on IP hash</b></td><td>Source+dest IP determines uplink — requires LACP/802.3ad on physical switch</td></tr>
+      <tr><td><b style="color:var(--orange)">Use explicit failover order</b></td><td>Active/standby: primary uplink always used, secondary only on failure</td></tr>
+    </table></div>
+    <div class="marks-row">
+      <div class="marks-chip">Default policy: <span>Port ID</span></div>
+      <div class="marks-chip">Needs physical switch config: <span>IP Hash only</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Multicast in vSphere Networking</div><span class="badge badge-green">🟢 Good to Know</span></div>
+    <div class="def-box"><strong>Multicast</strong> sends network traffic from one source to multiple destinations simultaneously — more efficient than unicast (one-to-one) or broadcast (one-to-all).</div>
+    <ul class="card-list">
+      <li>Used in vSphere for: <b>HA heartbeat communication</b>, vSAN cluster discovery, and certain cluster services</li>
+      <li>vSphere HA uses multicast (224.x.x.x) or unicast for master/slave election</li>
+      <li>Requires multicast-capable physical switches for some features</li>
+    </ul>
+  </div>
+
+  <!-- ═══ STORAGE ═══ -->
+  <div class="section-head" id="storage">
+    <div class="icon" style="background:var(--orange-dim)">💾</div>
+    <div><h2>vSphere Storage</h2><p>Shared Storage · RAID · Storage Array · vSAN</p></div>
+  </div>
+  <div class="card">
+    <div class="card-top"><div class="card-title">Shared Storage in vSphere</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>Shared storage</strong> allows multiple ESXi hosts to access the same datastore simultaneously — essential for features like vMotion, HA, and DRS. Without shared storage, VMs cannot be migrated between hosts.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Storage Type</th><th>Protocol</th><th>Key Characteristics</th></tr>
+      <tr><td><b style="color:var(--teal)">Fibre Channel (FC) SAN</b></td><td>Fibre Channel</td><td>High performance, dedicated storage network, uses HBA (Host Bus Adapter), expensive</td></tr>
+      <tr><td><b style="color:var(--blue)">iSCSI SAN</b></td><td>iSCSI (TCP/IP)</td><td>SAN over IP network, lower cost than FC, software or hardware initiator</td></tr>
+      <tr><td><b style="color:var(--green)">NFS (NAS)</b></td><td>NFS (TCP/IP)</td><td>File-level access, simple setup, shared over IP, flexible — no VMFS needed</td></tr>
+      <tr><td><b style="color:var(--orange)">FCoE</b></td><td>Fibre Channel over Ethernet</td><td>Combines FC and Ethernet — reduces cabling, uses CNA (Converged Network Adapter)</td></tr>
+      <tr><td><b style="color:var(--purple)">vSAN</b></td><td>VMware proprietary</td><td>Hyperconverged — uses local disks of ESXi hosts to create shared storage pool</td></tr>
+      <tr><td><b style="color:var(--red)">VMFS (Local/SAN)</b></td><td>VMware FS</td><td>VMware's clustered filesystem for SAN datastores — allows multiple hosts to mount same LUN</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Explain storage architectures in vSphere" = table with 5 types + protocol + key feature. Always mention: shared storage is required for vMotion, HA, DRS.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">RAID in vSphere Storage</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>RAID (Redundant Array of Independent Disks)</strong> combines multiple disks for performance and/or redundancy. Used in storage arrays connected to ESXi hosts.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>RAID Level</th><th>Name</th><th>Min Disks</th><th>Redundancy</th><th>Performance</th><th>Use Case</th></tr>
+      <tr><td><b style="color:var(--red)">RAID 0</b></td><td>Striping</td><td>2</td><td>None ❌</td><td>Best read/write</td><td>Temp data, not production</td></tr>
+      <tr><td><b style="color:var(--green)">RAID 1</b></td><td>Mirroring</td><td>2</td><td>1 disk failure</td><td>Good read</td><td>OS drives, critical data</td></tr>
+      <tr><td><b style="color:var(--blue)">RAID 5</b></td><td>Striping + Parity</td><td>3</td><td>1 disk failure</td><td>Good read</td><td>General purpose — most common</td></tr>
+      <tr><td><b style="color:var(--purple)">RAID 6</b></td><td>Double Parity</td><td>4</td><td>2 disk failures</td><td>Moderate</td><td>Critical storage, high availability</td></tr>
+      <tr><td><b style="color:var(--teal)">RAID 10</b></td><td>Stripe of Mirrors</td><td>4</td><td>1 per mirror pair</td><td>Best</td><td>Databases, high I/O workloads</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> RAID 5 = most commonly used in production. RAID 10 = best performance + redundancy. RAID 0 = no redundancy (dangerous for production).</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">VMware vSAN (Virtual SAN)</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>vSAN</strong> is VMware's <strong>hyperconverged storage solution</strong> that aggregates local disks from ESXi hosts in a cluster into a shared datastore — eliminating the need for external SAN/NAS hardware.</div>
+    <div class="code-box"><span class="cm">/* vSAN Architecture */</span>
+
+<span class="hl">  ESXi Host 1       ESXi Host 2       ESXi Host 3</span>
+<span class="hl">  ┌──────────┐      ┌──────────┐      ┌──────────┐</span>
+<span class="hl">  │ SSD+HDD  │      │ SSD+HDD  │      │ SSD+HDD  │</span>
+<span class="hl">  └────┬─────┘      └────┬─────┘      └────┬─────┘</span>
+<span class="hl">       │                 │                 │</span>
+<span class="hl">  ─────┴─────────────────┴─────────────────┴─────</span>
+<span class="hl">              vSAN Network (10 GbE)</span>
+<span class="hl">  ─────────────────────────────────────────────────</span>
+<span class="hl">              vSAN Datastore (shared pool)</span>
+<span class="hl">              ← All hosts see this as ONE datastore →</span></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--teal)">Requirements</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Minimum 3 ESXi hosts</li>
+          <li>Each host: SSD (cache) + HDD/SSD (capacity)</li>
+          <li>10 GbE network recommended</li>
+          <li>vSAN license required</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--orange)">Key Benefits</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>No external storage hardware</li>
+          <li>Storage grows by adding hosts</li>
+          <li>Policy-based management (SPBM)</li>
+          <li>Integrates natively with vSphere</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Min hosts: <span>3</span></div>
+      <div class="marks-chip">Disk groups: <span>1 SSD cache + 1–7 capacity disks</span></div>
+      <div class="marks-chip">VMkernel port: <span>Dedicated vSAN port needed</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: Storage Array Architectures -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">Storage Array Architectures</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Storage Array Architecture</strong> refers to the physical and logical design of external storage systems connected to ESXi hosts. Different array types serve different performance, cost, and scalability needs.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Architecture</th><th>Type</th><th>Key Characteristics</th></tr>
+      <tr><td><b style="color:var(--teal)">Monolithic Array</b></td><td>Traditional SAN</td><td>Single large array with dedicated controllers; high performance; expensive; vertical scaling</td></tr>
+      <tr><td><b style="color:var(--blue)">Modular Array</b></td><td>SAN/NAS</td><td>Add-on shelf expansion; mid-range cost; common in SMB environments</td></tr>
+      <tr><td><b style="color:var(--green)">Hybrid Array</b></td><td>SAN</td><td>Mix of SSD (cache tier) and HDD (capacity tier); automated tiering (e.g., EMC FAST, NetApp FAS)</td></tr>
+      <tr><td><b style="color:var(--orange)">All-Flash Array (AFA)</b></td><td>SAN/NVMe</td><td>100% SSD storage; ultra-low latency; high IOPS; best for databases and VDI</td></tr>
+      <tr><td><b style="color:var(--purple)">Hyperconverged (HCI)</b></td><td>Software-defined</td><td>Compute + storage combined in same server; vSAN is VMware's HCI solution; scale-out model</td></tr>
+      <tr><td><b style="color:var(--red)">Scale-Out / Distributed</b></td><td>Object storage</td><td>Commodity hardware nodes; grows by adding nodes; used for backup/archive (e.g., vSAN, ScaleIO)</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Explain storage array architectures" = table with 4–5 types. Key contrast: Monolithic = big+expensive; HCI (vSAN) = compute+storage combined; AFA = all SSD for highest performance.</div></div>
+  </div>
+
+  <!-- ═══ HA ═══ -->
+  <div class="section-head" id="ha">
+    <div class="icon" style="background:var(--red-dim)">🛡️</div>
+    <div><h2>High Availability & Business Continuity</h2><p>HA Layers · VM Clustering · NLB · WSFC</p></div>
+  </div>
+
+  <!-- CARD: HA Layers -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">HA Layers in vSphere</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>High Availability in vSphere operates at multiple layers</strong> — each layer provides a different level of protection and complements the others.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Layer</th><th>Mechanism</th><th>Protects Against</th></tr>
+      <tr><td><b style="color:var(--teal)">Infrastructure HA</b></td><td>Redundant power supplies, network switches, storage paths (multipathing)</td><td>Physical hardware failures in data center</td></tr>
+      <tr><td><b style="color:var(--blue)">vSphere HA</b></td><td>Automatically restarts VMs on surviving hosts after ESXi host failure</td><td>ESXi host failure — VM-level restart in minutes</td></tr>
+      <tr><td><b style="color:var(--green)">vSphere FT</b></td><td>Shadow VM on secondary host via vLockstep — instant failover</td><td>ESXi host failure — zero VM downtime</td></tr>
+      <tr><td><b style="color:var(--orange)">Application HA (WSFC/NLB)</b></td><td>Windows clustering or load balancing within guest OS</td><td>Application failures and load distribution</td></tr>
+      <tr><td><b style="color:var(--purple)">Backup & Replication</b></td><td>VM snapshots, vSphere Replication, third-party backup tools</td><td>Data loss — recovery from backup</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Explain HA layers" = 5-row table above. Emphasize that each layer protects against different failure types — they are complementary, not alternatives.</div></div>
+  </div>
+
+  <!-- CARD: VM Clustering -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">VM Clustering in vSphere</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>VM Clustering</strong> (also called Guest OS Clustering) refers to configuring multiple VMs to work together as a cluster at the <b>guest OS level</b> — providing application-level high availability independent of vSphere HA.</div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--blue)">Cluster-in-a-Box (CIB)</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Both VMs on the <b>same ESXi host</b></li>
+          <li>Share a VMDK as shared disk</li>
+          <li>Protects against app failure only (not host failure)</li>
+          <li>Use only for testing / dev environments</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--teal)">Cluster-Across-Boxes (CAB)</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>VMs on <b>different ESXi hosts</b></li>
+          <li>Shared RDM (Raw Device Mapping) disk on SAN</li>
+          <li>Protects against both app AND host failure</li>
+          <li>Recommended for production WSFC clusters</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Shared disk options: <span>RDM (physical mode) or Clustered VMDK</span></div>
+      <div class="marks-chip">Examples: <span>SQL Server Always On, Windows WSFC</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">vSphere High Availability (HA)</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>vSphere HA</strong> automatically <strong>restarts VMs on surviving hosts</strong> when an ESXi host fails. It detects host failures and responds without manual intervention — minimizing downtime for mission-critical workloads.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>HA Concept</th><th>Explanation</th></tr>
+      <tr><td><b style="color:var(--teal)">Master Host</b></td><td>Elected host that monitors slave hosts and manages VM restarts; elected by majority vote</td></tr>
+      <tr><td><b style="color:var(--blue)">Slave Host</b></td><td>All other hosts in the HA cluster; send heartbeats to master</td></tr>
+      <tr><td><b style="color:var(--green)">Heartbeat</b></td><td>Periodic signal (every 1 second) sent between master and slaves to detect failures</td></tr>
+      <tr><td><b style="color:var(--orange)">Datastore Heartbeat</b></td><td>Secondary mechanism using shared datastore to distinguish host failure from network partition</td></tr>
+      <tr><td><b style="color:var(--red)">Admission Control</b></td><td>Reserves cluster resources to ensure failover capacity is always available</td></tr>
+      <tr><td><b style="color:var(--purple)">Isolation Response</b></td><td>What a host does when it can't reach master: Power off / Shut down / Leave VMs running</td></tr>
+      <tr><td><b style="color:var(--yellow)">VM Restart Priority</b></td><td>High / Medium / Low — order in which VMs are restarted after failover</td></tr>
+    </table></div>
+    <div class="code-box"><span class="cm">/* HA Failure Detection & Failover Flow */</span>
+
+<span class="hl">Host A fails (no heartbeat for 15 sec)</span>
+          ↓
+<span class="hl">Master checks Datastore Heartbeat</span>
+          ↓
+<span class="hl">If no datastore heartbeat either → Confirmed failure</span>
+          ↓
+<span class="hl">Master restarts VMs from Host A on remaining hosts</span>
+<span class="hl">(in priority order: High → Medium → Low)</span></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Draw the HA flow: Host failure → Master detects → Datastore heartbeat check → VM restart. Mention: master/slave election, admission control, isolation response. This is the most asked HA question.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">HA vs FT vs DRS — Comparison</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>HA (High Availability)</th><th>FT (Fault Tolerance)</th><th>DRS (Distributed Resource Scheduler)</th></tr>
+      <tr><td>Purpose</td><td>Restart VMs after host failure</td><td>Zero downtime — continuous availability</td><td>Balance workloads across hosts</td></tr>
+      <tr><td>Downtime</td><td>Minutes (VM restart time)</td><td>Zero (secondary VM takes over instantly)</td><td>No downtime — live migration</td></tr>
+      <tr><td>How it works</td><td>Master host restarts VMs on other hosts</td><td>Shadow VM on secondary host; vLockstep</td><td>vMotion VMs to less loaded hosts</td></tr>
+      <tr><td>SLA level</td><td>99.9% (minutes outage)</td><td>99.999% (zero outage)</td><td>Performance SLA</td></tr>
+      <tr><td>Resource overhead</td><td>Low — just reserved failover capacity</td><td>High — double CPU/RAM for each FT VM</td><td>Low — just monitoring + migrations</td></tr>
+      <tr><td>vCenter required</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Differentiate HA, FT, and DRS" is a guaranteed 6-mark question. Use the table and highlight: FT = zero downtime but high overhead; HA = minutes downtime but lower overhead.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Network Load Balancing (NLB) & Windows Server Failover Clustering (WSFC)</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>NLB (Network Load Balancing)</strong> distributes incoming network traffic across multiple servers to prevent any single server from being overwhelmed — improves performance and availability for stateless workloads (web servers, etc.).</div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--blue)">NLB in vSphere</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>VMs running NLB must be on same network segment</li>
+          <li>vSwitch must be set to <b>Promiscuous Mode</b></li>
+          <li>Works at Layer 4 (TCP/UDP)</li>
+          <li>Suitable for stateless: web, DNS, FTP</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--orange)">WSFC in vSphere</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Windows Server Failover Clustering — for stateful applications (SQL, Exchange)</li>
+          <li>Requires shared RDM (Raw Device Mapping) or Cluster-in-a-Box</li>
+          <li>VMs in same cluster can be on different ESXi hosts</li>
+          <li>Used for active/passive clustering</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECURITY ═══ -->
+  <div class="section-head" id="security">
+    <div class="icon" style="background:var(--purple-dim)">🔒</div>
+    <div><h2>Securing VMware vSphere</h2><p>ESXi Security · Authentication · Permissions · Patching · Logging · Boot Security</p></div>
+  </div>
+  <div class="card">
+    <div class="card-top"><div class="card-title">ESXi Security Best Practices</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--red)">Access Control</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Disable SSH and ESXi Shell by default</li>
+          <li>Use DCUI for local management only</li>
+          <li>Restrict root account — create named admin accounts</li>
+          <li>Use Host Client (HTTPS) for remote access</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--orange)">Authentication</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Integrate ESXi with Active Directory (AD)</li>
+          <li>Use vCenter SSO for central auth</li>
+          <li>Enable two-factor authentication (2FA)</li>
+          <li>Configure lockdown mode (Normal / Strict)</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--blue)">Patching & Updates</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Use VUM for systematic patch management</li>
+          <li>Keep ESXi and VMware Tools up to date</li>
+          <li>Apply security patches promptly</li>
+          <li>Use baselines for compliance tracking</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--purple)">Logging & Audit</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Configure syslog to remote syslog server</li>
+          <li>Enable audit logging in vCenter</li>
+          <li>Monitor /var/log on ESXi for security events</li>
+          <li>Use vRealize Log Insight for centralized logging</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Permissions & Role-Based Access Control (RBAC)</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>vSphere Permissions = Role + User/Group + Object</strong>. A permission grants a user (or group) a specific role on a specific vSphere object (e.g., a VM, host, datacenter).</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Component</th><th>Description</th></tr>
+      <tr><td><b style="color:var(--teal)">Role</b></td><td>A named collection of privileges (e.g., Administrator, Read-Only, VM Power User)</td></tr>
+      <tr><td><b style="color:var(--blue)">Privilege</b></td><td>A single granular permission (e.g., "VM.PowerOn", "Datastore.Browse")</td></tr>
+      <tr><td><b style="color:var(--green)">Object</b></td><td>The vSphere inventory item the permission applies to (VM, host, cluster, datacenter)</td></tr>
+      <tr><td><b style="color:var(--orange)">Propagation</b></td><td>Permissions set on a parent object (datacenter) automatically apply to child objects (hosts, VMs)</td></tr>
+      <tr><td><b style="color:var(--red)">Global Permissions</b></td><td>Apply across entire vCenter inventory (top-level); supersede object-level permissions</td></tr>
+    </table></div>
+    <div class="code-box"><span class="cm">/* Built-in Roles in vSphere */</span>
+<span class="hl">Administrator</span>      <span class="cm">← Full access to all objects</span>
+<span class="hl">Read-Only</span>          <span class="cm">← View only, no changes</span>
+<span class="hl">No Access</span>          <span class="cm">← Cannot see or interact with the object</span>
+<span class="hl">VM Power User</span>      <span class="cm">← Interact with VMs but not configure</span>
+<span class="hl">Datastore Consumer</span> <span class="cm">← Allocate space on datastores</span></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Explain RBAC in vSphere" = define Role + Privilege + Object + Permission propagation. Mention built-in roles. Always state: permissions propagate from parent to child by default.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">ESXi Lockdown Mode</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Lockdown Mode</strong> restricts ESXi host access so that management is only possible through <strong>vCenter Server</strong> — direct host login is blocked. This hardens security by centralizing control.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Mode</th><th>SSH/Shell</th><th>DCUI</th><th>vCenter API</th><th>Exception Users</th></tr>
+      <tr><td><b style="color:var(--green)">Normal</b></td><td>Disabled</td><td>Allowed</td><td>Allowed</td><td>Exception user list respected</td></tr>
+      <tr><td><b style="color:var(--red)">Strict</b></td><td>Disabled</td><td>Disabled</td><td>Allowed</td><td>Only exception users via vCenter</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">ESXi Boot Process Security</div><span class="badge badge-green">🟢 Good to Know</span></div>
+    <ul class="card-list">
+      <li><b style="color:var(--teal)">Secure Boot</b> — UEFI feature that verifies ESXi bootloader and kernel using cryptographic signatures; prevents loading of unauthorized/tampered code</li>
+      <li><b style="color:var(--blue)">TPM 2.0</b> — Trusted Platform Module; stores cryptographic keys; used for VM Encryption key storage and attestation</li>
+      <li><b style="color:var(--green)">vTPM</b> — Virtual TPM added to VMs; allows guest OS to use TPM-based features (BitLocker, Windows Hello)</li>
+      <li><b style="color:var(--orange)">Encrypted Boot</b> — ESXi configuration can be encrypted; requires TPM to decrypt at boot</li>
+    </ul>
+  </div>
+
+  <!-- ═══ QUICK REVISION ═══ -->
+  <div class="section-head">
+    <div class="icon" style="background:var(--orange-dim)">📋</div>
+    <div><h2>Quick Revision — Unit II at a Glance</h2></div>
+  </div>
+  <div class="card" style="border-color:#2dd4bf55">
+    <div class="card-title" style="margin-bottom:14px">🔑 Keywords & One-Liners</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Term</th><th>One-Line Answer</th></tr>
+      <tr><td><b>VUM</b></td><td>vSphere Update Manager — automates patching/upgrading ESXi and VMs via baselines</td></tr>
+      <tr><td><b>Baseline</b></td><td>Collection of patches VUM uses to check and enforce compliance</td></tr>
+      <tr><td><b>vSS</b></td><td>vSphere Standard Switch — software L2 switch inside ESXi for VM networking</td></tr>
+      <tr><td><b>VMkernel Port</b></td><td>ESXi's own traffic port — management, vMotion, iSCSI, FT, vSAN</td></tr>
+      <tr><td><b>Port Group</b></td><td>Logical grouping of vSwitch ports with shared policy (VLAN, security, teaming)</td></tr>
+      <tr><td><b>Uplink</b></td><td>Physical NIC of ESXi host connected to external physical switch</td></tr>
+      <tr><td><b>NIC Teaming</b></td><td>Multiple physical NICs on one vSwitch for redundancy + load balancing</td></tr>
+      <tr><td><b>VLAN 4095</b></td><td>VLAN trunk mode on vSwitch — all VLANs pass through</td></tr>
+      <tr><td><b>VMFS</b></td><td>VMware's clustered filesystem — multiple hosts can mount same LUN</td></tr>
+      <tr><td><b>vSAN</b></td><td>Hyperconverged storage — local disks of hosts form shared datastore</td></tr>
+      <tr><td><b>RAID 5</b></td><td>Striping + parity; 1 disk fault tolerance; most common in production</td></tr>
+      <tr><td><b>vSphere HA</b></td><td>Restarts VMs on surviving hosts after ESXi host failure</td></tr>
+      <tr><td><b>vSphere FT</b></td><td>Zero-downtime — shadow VM on secondary host via vLockstep</td></tr>
+      <tr><td><b>DRS</b></td><td>Balances VM workloads across hosts using vMotion automatically</td></tr>
+      <tr><td><b>Admission Control</b></td><td>Reserves failover capacity in HA cluster — prevents resource overcommit</td></tr>
+      <tr><td><b>RBAC</b></td><td>Role + User + Object = Permission; propagates from parent to child</td></tr>
+      <tr><td><b>Lockdown Mode</b></td><td>Forces all ESXi management through vCenter only; Normal or Strict</td></tr>
+      <tr><td><b>Secure Boot</b></td><td>UEFI feature verifying ESXi kernel signatures at boot</td></tr>
+    </table></div>
+  </div>
+  <div class="card" style="border-color:#34d39955">
+    <div class="card-top"><div class="card-title">🎯 Most Likely Exam Questions — Unit II</div><span class="badge badge-red">🔴 Study These</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>#</th><th>Question</th><th>Key Points</th></tr>
+      <tr><td>1</td><td>Explain vSphere Update Manager (VUM) and its workflow</td><td>Definition + Baseline types + Scan → Stage → Remediate flow</td></tr>
+      <tr><td>2</td><td>Compare virtual switch and physical switch</td><td>Table: location, STP, VLAN, cost, management, port types</td></tr>
+      <tr><td>3</td><td>Explain vSphere HA with failover mechanism</td><td>Master/slave + heartbeat + datastore heartbeat + isolation response + admission control</td></tr>
+      <tr><td>4</td><td>Differentiate HA, FT, and DRS</td><td>Downtime, mechanism, overhead, SLA — comparison table</td></tr>
+      <tr><td>5</td><td>Explain shared storage types in vSphere</td><td>FC, iSCSI, NFS, vSAN, VMFS — table with protocol and key features</td></tr>
+      <tr><td>6</td><td>Explain vSAN architecture and benefits</td><td>Hyperconverged, diagram, requirements (3 hosts, SSD+HDD), SPBM</td></tr>
+      <tr><td>7</td><td>Explain RBAC and permissions in vSphere</td><td>Role + Privilege + Object + Propagation + built-in roles</td></tr>
+      <tr><td>8</td><td>Explain NIC Teaming and load balancing policies</td><td>4 policies: Port ID, MAC hash, IP hash, explicit failover</td></tr>
+    </table></div>
+  </div>
+</div>
+</body>
+</html>

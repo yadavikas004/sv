@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit III – Server Virtualization (VMware vSphere 6.7)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap');
+  :root {
+    --bg: #0f1117; --bg2: #161a24; --bg3: #1e2330; --border: #2a3045;
+    --text: #e2e8f0; --muted: #8892a4;
+    --purple: #a78bfa; --purple-dim: #6d4fc740;
+    --blue: #60a5fa; --blue-dim: #3b82f620;
+    --green: #34d399; --green-dim: #10b98120;
+    --orange: #fb923c; --orange-dim: #f9731620;
+    --red: #f87171; --red-dim: #ef444420;
+    --cyan: #22d3ee; --cyan-dim: #06b6d420;
+    --yellow: #fbbf24;
+    --indigo: #818cf8; --indigo-dim: #6366f120;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Sora', sans-serif; font-size: 15px; line-height: 1.7; }
+  .hero { background: linear-gradient(135deg, #0f1117 0%, #140d2e 50%, #0f1a2e 100%); border-bottom: 1px solid var(--border); padding: 48px 32px 36px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 60% -10%, #6366f130, transparent), radial-gradient(ellipse 60% 40% at 10% 100%, #7c3aed22, transparent); }
+  .hero-inner { max-width: 900px; margin: 0 auto; position: relative; }
+  .hero-badge { display: inline-block; background: var(--indigo-dim); border: 1px solid #818cf855; color: var(--indigo); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px; }
+  .hero h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 10px; }
+  .hero h1 span { color: var(--indigo); }
+  .hero p { color: var(--muted); font-size: 14px; max-width: 600px; }
+  .hero-meta { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+  .hero-meta span { font-size: 12px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; }
+  .hero-meta span b { color: var(--text); }
+  .legend { max-width: 900px; margin: 24px auto; padding: 0 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px 60px; }
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 36px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .section-head .icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .section-head h2 { font-size: 18px; font-weight: 700; color: #fff; }
+  .section-head p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-bottom: 16px; }
+  .card:hover { border-color: #3a4060; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .card-title { font-size: 16px; font-weight: 700; color: #fff; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid #ef444440; }
+  .badge-orange { background: var(--orange-dim); color: var(--orange); border: 1px solid #f9731640; }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid #10b98140; }
+  .def-box { background: #1a1f30; border-left: 3px solid var(--indigo); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0; font-size: 14px; }
+  .def-box strong { color: var(--indigo); }
+  .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--bg3); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid #1e2330; color: var(--text); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1e2330; }
+  .code-box { background: #0d1117; border: 1px solid #2a3045; border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a5f3fc; overflow-x: auto; white-space: pre; line-height: 1.6; }
+  .code-box .cm { color: var(--muted); } .code-box .hl { color: var(--yellow); } .code-box .st { color: var(--green); }
+  .tip { background: linear-gradient(135deg, #1a1a10, #1e1a10); border: 1px solid #fbbf2440; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+  .tip-icon { font-size: 16px; flex-shrink: 0; }
+  .tip-text { color: var(--text); }
+  .tip-text b { color: var(--yellow); }
+  ul.card-list { list-style: none; padding: 0; margin: 8px 0; }
+  ul.card-list li { padding: 4px 0 4px 18px; position: relative; font-size: 14px; }
+  ul.card-list li::before { content: '▸'; position: absolute; left: 0; color: var(--indigo); font-size: 11px; top: 6px; }
+  .marks-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .marks-chip { font-size: 11px; font-weight: 600; background: var(--bg3); border: 1px solid var(--border); color: var(--muted); padding: 3px 10px; border-radius: 6px; }
+  .marks-chip span { color: var(--cyan); font-weight: 700; }
+  .hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media(max-width:580px){ .hgrid { grid-template-columns: 1fr; } }
+  .hcell { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .hcell h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .hcell p, .hcell ul { font-size: 13px; color: var(--muted); }
+  .flow-step { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 4px; font-size: 13px; }
+  .flow-step .num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .flow-arrow { text-align: center; color: var(--border); font-size: 14px; margin: 2px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media(max-width:600px){ .two-col { grid-template-columns: 1fr; } }
+  .toc { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin: 20px 0; }
+  .toc h3 { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  @media(max-width:560px){ .toc-grid { grid-template-columns: 1fr; } }
+  .toc-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 5px 8px; border-radius: 6px; text-decoration: none; }
+  .toc-link:hover { background: var(--bg3); }
+  .toc-link .tl { color: var(--indigo); font-size: 11px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">MSc CS · Sem IV · Mumbai University</div>
+    <h1>Unit III — <span>Virtual Machines, Templates & Resources</span></h1>
+    <p>Server Virtualization · VMware vSphere 6.7 · Exam Study Guide</p>
+    <div class="hero-meta">
+      <span>📋 <b>12 Marks</b> per question</span>
+      <span>✍️ <b>2 sub-questions</b> × 6 marks</span>
+      <span>📚 <b>3 Topics</b> covered</span>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> 🔴 Must Know</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> 🟠 High Priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> 🟢 Good to Know</div>
+  </div>
+  <div class="toc">
+    <h3>Topics in Unit III</h3>
+    <div class="toc-grid">
+      <a class="toc-link" href="#vm"><span class="tl">§1</span> Creating & Managing Virtual Machines</a>
+      <a class="toc-link" href="#templates"><span class="tl">§2</span> Templates, vApps & OVF</a>
+      <a class="toc-link" href="#resources"><span class="tl">§3</span> Managing Resource Allocation</a>
+      <a class="toc-link" href="#memory"><span class="tl">§3</span> Advanced Memory Technologies</a>
+    </div>
+  </div>
+
+  <!-- ═══ VMs ═══ -->
+  <div class="section-head" id="vm">
+    <div class="icon" style="background:var(--indigo-dim)">🖥️</div>
+    <div><h2>Creating & Managing Virtual Machines</h2><p>VM internals · externals · sizing · creation</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">VM Internals vs Externals</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="two-col">
+      <div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:700">VM Internals (logical components)</p>
+        <div class="def-box" style="margin-top:0">Components managed by VMware — exist as files on a datastore</div>
+        <div class="tbl-wrap"><table>
+          <tr><th>File</th><th>Purpose</th></tr>
+          <tr><td><b style="color:var(--indigo)">.vmx</b></td><td>VM configuration file (text) — CPU, RAM, devices</td></tr>
+          <tr><td><b style="color:var(--blue)">.vmdk</b></td><td>Virtual disk — stores VM's OS and data</td></tr>
+          <tr><td><b style="color:var(--green)">.nvram</b></td><td>BIOS/UEFI settings of the VM</td></tr>
+          <tr><td><b style="color:var(--orange)">.vmsd</b></td><td>Snapshot database — tracks snapshot tree</td></tr>
+          <tr><td><b style="color:var(--red)">.vmsn</b></td><td>Snapshot state file — VM memory state</td></tr>
+          <tr><td><b style="color:var(--yellow)">.log</b></td><td>VM log file for troubleshooting</td></tr>
+          <tr><td><b style="color:var(--muted)">.vmss</b></td><td>Suspend state (when VM is suspended)</td></tr>
+        </table></div>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:700">VM Externals (virtual hardware)</p>
+        <div class="def-box" style="margin-top:0">Virtual hardware devices presented to the guest OS</div>
+        <ul class="card-list">
+          <li><b style="color:var(--indigo)">vCPU</b> — Virtual processors (sockets × cores)</li>
+          <li><b style="color:var(--blue)">vRAM</b> — Virtual memory allocated to VM</li>
+          <li><b style="color:var(--green)">vNIC</b> — Virtual network adapter (VMXNET3, E1000e)</li>
+          <li><b style="color:var(--orange)">VMDK</b> — Virtual hard disk (thin/thick provisioned)</li>
+          <li><b style="color:var(--red)">CD/DVD</b> — Virtual optical drive</li>
+          <li><b style="color:var(--purple)">USB controller</b> — Virtual USB device support</li>
+          <li><b style="color:var(--yellow)">Display adapter</b> — SVGA virtual display</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Explain VM internals and externals" = files (.vmx, .vmdk, .nvram etc.) + virtual hardware (vCPU, vRAM, vNIC, VMDK). Most asked in 6-mark format.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Sizing Virtual Machines — CPU, Memory, Disk</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Resource</th><th>Sizing Guidelines</th><th>Key Considerations</th></tr>
+      <tr><td><b style="color:var(--indigo)">vCPU</b></td><td>Match to workload; start small (1–2 vCPUs) and grow</td><td>Over-provisioning vCPUs causes CPU scheduling contention; ratio: ≤4 vCPUs per pCPU recommended</td></tr>
+      <tr><td><b style="color:var(--blue)">vRAM</b></td><td>Allocate what the workload needs; avoid excess</td><td>Over-allocation triggers ballooning, swapping — degrades performance</td></tr>
+      <tr><td><b style="color:var(--green)">vDisk (VMDK)</b></td><td>Thin provision for flexibility; thick eager-zeroed for databases</td><td>Thin: allocates on demand. Thick lazy: pre-allocates but no zeroing. Thick eager: pre-allocates + zeros — best I/O.</td></tr>
+    </table></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--indigo)">Thin Provisioning</h4><p>Disk grows on demand up to max size. Saves space but can cause over-commitment issues.</p></div>
+      <div class="hcell"><h4 style="color:var(--orange)">Thick Eager Zeroed</h4><p>Pre-allocates all space AND zeroes blocks at creation. Best performance — used for databases, FT VMs.</p></div>
+      <div class="hcell"><h4 style="color:var(--blue)">Thick Lazy Zeroed</h4><p>Pre-allocates space but zeroes blocks on first write. Balance between speed of creation and performance.</p></div>
+      <div class="hcell"><h4 style="color:var(--green)">Right-Sizing</h4><p>Use vCenter performance charts to identify over/under-provisioned VMs and adjust accordingly.</p></div>
+    </div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Always remember: Thin = flexible but risky; Thick Eager Zeroed = best performance for production. FT VMs require Thick Eager Zeroed.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">VM Snapshots</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Snapshot</strong> captures the state of a VM (memory, disk, VM settings) at a point in time. Allows reverting to a previous state. <b>Not</b> a backup — snapshots are delta files that grow over time.</div>
+    <div class="code-box"><span class="cm">/* Snapshot Delta Chain */</span>
+
+<span class="hl">Base VMDK</span> → <span class="hl">Snapshot 1 delta</span> → <span class="hl">Snapshot 2 delta</span> → <span class="hl">Current state</span>
+         ↑                ↑                ↑
+    (original)     (changes from       (changes from
+                    base to S1)         S1 to S2)</span>
+
+<span class="cm">Revert to Snapshot 1: discards all changes after S1</span>
+<span class="cm">Delete snapshot: merges delta into parent → consolidates</span></div>
+    <div class="marks-row">
+      <div class="marks-chip">Files created: <span>.vmsd + .vmsn + delta .vmdk</span></div>
+      <div class="marks-chip">Best practice: <span>Delete snapshots after use; max 3 in chain</span></div>
+      <div class="marks-chip">Impact: <span>Disk I/O degrades with many snapshots</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: Naming VMs -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">Naming Virtual Machines</div><span class="badge badge-green">🟢 Good to Know</span></div>
+    <div class="def-box"><strong>VM naming</strong> in vSphere is the process of assigning a meaningful, consistent name to a virtual machine in the vCenter inventory. The <b>VM name</b> (inventory name) is separate from the <b>guest OS hostname</b>.</div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--indigo)">VM Inventory Name</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Name shown in vCenter inventory — for admin identification</li>
+          <li>Up to 80 characters; can include spaces</li>
+          <li>Does NOT need to match guest OS hostname</li>
+          <li>Best practice: use a consistent naming convention (e.g., Role-OS-Env: WebSrv-Win2019-Prod)</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--blue)">Naming Convention Best Practices</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Include: <b>role</b> (web, db, app), <b>OS</b> (win, rhel), <b>environment</b> (prod, dev, test)</li>
+          <li>Include: <b>site/location</b> code and <b>sequence number</b> (e.g., MUM-WEB-PROD-01)</li>
+          <li>Keep consistent across the organization</li>
+          <li>Avoid spaces in names used for scripting/automation</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Max length: <span>80 characters</span></div>
+      <div class="marks-chip">Guest hostname: <span>Set separately in guest OS or Customization Spec</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ TEMPLATES & VAPPS ═══ -->
+  <div class="section-head" id="templates">
+    <div class="icon" style="background:var(--blue-dim)">📋</div>
+    <div><h2>Templates, vApps & OVF</h2><p>Cloning · Customization · Instant Clone · Creating Templates · Deploying from Templates · OVF/OVA</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">VM Cloning vs Templates</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>Clone</th><th>Template</th></tr>
+      <tr><td>Definition</td><td>Exact copy of an existing VM</td><td>A VM converted to a "gold image" — cannot be powered on directly</td></tr>
+      <tr><td>Can power on?</td><td>Yes</td><td>No — must deploy from template</td></tr>
+      <tr><td>Purpose</td><td>Quick copy of a specific VM state</td><td>Standard base image for mass deployment</td></tr>
+      <tr><td>Modification</td><td>Modified independently after clone</td><td>Must convert back to VM to modify</td></tr>
+      <tr><td>Customization Spec</td><td>Optional</td><td>Recommended — applies OS customization at deploy time</td></tr>
+      <tr><td>Storage</td><td>New VM files created</td><td>Template files stored in datastore (no running overhead)</td></tr>
+    </table></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> "Template vs Clone" = table above. Key points: Template cannot be powered on; used as gold image; Customization Spec changes hostname/IP/SID at deploy time.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Customization Specifications</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Customization Specification</strong> is a saved set of configuration settings applied to a VM when deployed from a template — automatically customizes the guest OS (hostname, IP, domain, SID) so each deployed VM is unique.</div>
+    <ul class="card-list">
+      <li>Prevents duplicate <b>SID</b> (Security Identifier) issues in Windows VMs</li>
+      <li>Sets unique <b>hostname, IP address, DNS, time zone</b></li>
+      <li>Can run a <b>custom script</b> after deployment (post-deploy automation)</li>
+      <li>Saved in vCenter and reusable across multiple deployments</li>
+      <li>Requires <b>VMware Tools</b> to be installed in the guest OS</li>
+    </ul>
+    <div class="marks-row">
+      <div class="marks-chip">Requires: <span>VMware Tools in guest OS</span></div>
+      <div class="marks-chip">Prevents: <span>Duplicate SID / IP conflicts</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: Creating Templates -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">Creating VM Templates</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>A template</strong> is a master copy (gold image) of a VM used for repeated, standardized deployments. Once converted to a template, the VM <b>cannot be powered on</b> — it only exists to be cloned/deployed from.</div>
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 6px;font-weight:700">Steps to Create a Template:</p>
+    <div class="flow-step"><div class="num" style="background:var(--indigo-dim);color:var(--indigo)">1</div><div>Prepare the source VM — install OS, apply patches, install apps, run Sysprep (Windows) or waagent (Linux) to generalize</div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><div class="num" style="background:var(--blue-dim);color:var(--blue)">2</div><div>Install <b>VMware Tools</b> — required for customization spec to work during deployment</div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><div class="num" style="background:var(--green-dim);color:var(--green)">3</div><div>Power off the VM → Right-click → <b>"Clone to Template"</b> or <b>"Convert to Template"</b></div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><div class="num" style="background:var(--orange-dim);color:var(--orange)">4</div><div>Template stored in datastore — shown in <b>VMs and Templates</b> view in vSphere Client</div></div>
+    <div class="hgrid" style="margin-top:10px">
+      <div class="hcell"><h4 style="color:var(--indigo)">Clone to Template</h4><p>Creates a template copy while keeping the original VM intact — VM still exists and can be used</p></div>
+      <div class="hcell"><h4 style="color:var(--orange)">Convert to Template</h4><p>Converts the VM itself into a template — original VM is gone; only template remains</p></div>
+    </div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Know the difference: "Clone to Template" keeps the VM; "Convert to Template" removes the VM. Templates are stored in the same datastore as VMs.</div></div>
+  </div>
+
+  <!-- CARD: Deploying from Templates -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">Deploying VMs from Templates</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Deploying from a template</strong> creates one or more new VMs from a template — each deployed VM gets its own identity (hostname, IP, SID) via a <b>Customization Specification</b> applied during deployment.</div>
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 6px;font-weight:700">Deployment Steps:</p>
+    <div class="flow-step"><div class="num" style="background:var(--indigo-dim);color:var(--indigo)">1</div><div>Right-click the template → <b>"New VM from This Template"</b> (or "Deploy VM from Template")</div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><div class="num" style="background:var(--blue-dim);color:var(--blue)">2</div><div>Wizard: select <b>name</b>, folder, compute resource (host/cluster), storage (datastore), disk format (thin/thick)</div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><div class="num" style="background:var(--green-dim);color:var(--green)">3</div><div>Select <b>Customization Specification</b> — sets unique hostname, IP address, domain, SID for this VM</div></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><div class="num" style="background:var(--orange-dim);color:var(--orange)">4</div><div>Review summary → Finish → VM is created, customized, and powered on automatically</div></div>
+    <div class="marks-row">
+      <div class="marks-chip">No customization spec: <span>Deployed VM has same hostname/IP as template source — conflict!</span></div>
+      <div class="marks-chip">Content Library: <span>Store templates centrally; deploy across multiple vCenters</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Instant Clone</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Instant Clone</strong> creates a new VM from a <strong>running parent VM</strong> — the clone shares the parent's memory pages (copy-on-write) and disk, enabling near-instantaneous VM creation (milliseconds).</div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--indigo)">How it works</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Parent VM is quiesced momentarily</li>
+          <li>Fork creates child from parent's memory</li>
+          <li>Child gets its own identity (via customization)</li>
+          <li>Parent resumes immediately</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--blue)">Use cases</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>VMware Horizon VDI (virtual desktops)</li>
+          <li>Cloud-native app scaling</li>
+          <li>Rapid test environment provisioning</li>
+          <li>Stateless workloads that need fast spin-up</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Speed: <span>Milliseconds (shares parent memory)</span></div>
+      <div class="marks-chip">vs Clone: <span>Full clone = minutes; Instant = ms</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">OVF / OVA Templates</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box">
+      <strong>OVF (Open Virtualization Format)</strong> is an open standard for packaging and distributing virtual appliances. An <strong>OVA (Open Virtual Appliance)</strong> is a single-file archive (.ova) of an OVF package.
+    </div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Feature</th><th>OVF</th><th>OVA</th></tr>
+      <tr><td>Format</td><td>Multiple files (.ovf descriptor + .vmdk + .mf manifest)</td><td>Single .ova archive (tar of all OVF files)</td></tr>
+      <tr><td>Portability</td><td>Open standard — works across different hypervisors</td><td>Same — easier to distribute (one file)</td></tr>
+      <tr><td>Use case</td><td>Sharing VMs/appliances between environments</td><td>Deploying pre-built appliances (e.g., VCSA, NSX)</td></tr>
+    </table></div>
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:700">OVF Operations in vSphere:</p>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--indigo)">Deploy OVF/OVA</h4><p>Import a virtual appliance into vSphere from local disk or URL — wizard-based in vSphere Client</p></div>
+      <div class="hcell"><h4 style="color:var(--blue)">Export OVF/OVA</h4><p>Export a VM or vApp to OVF/OVA format — preserves disk, config, and hardware version</p></div>
+      <div class="hcell"><h4 style="color:var(--green)">Examine OVF</h4><p>View OVF descriptor (.ovf file) to check VM requirements, disk sizes, properties before deploying</p></div>
+      <div class="hcell"><h4 style="color:var(--orange)">Content Library</h4><p>vCenter repository for templates, OVF/OVAs, ISOs — enables sharing across multiple vCenter instances</p></div>
+    </div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> OVF vs OVA = multi-file vs single-file. Key operations: Deploy, Export, Examine. Mention Content Library as vCenter's central template store.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">vApps</div><span class="badge badge-green">🟢 Good to Know</span></div>
+    <div class="def-box"><strong>vApp</strong> is a container for multiple related VMs that function together as a single application (e.g., a 3-tier web app: web server + app server + DB server). A vApp can be managed, started, stopped, and exported as a unit.</div>
+    <ul class="card-list">
+      <li>Has its own <b>power-on/off sequence</b> — start DB first, then app server, then web server</li>
+      <li>Can be exported as OVF/OVA (entire multi-VM app in one package)</li>
+      <li>Supports <b>IP allocation policies</b> and properties for VMs within</li>
+      <li>Displayed as a container in the vSphere inventory alongside VMs</li>
+    </ul>
+  </div>
+
+  <!-- ═══ RESOURCES ═══ -->
+  <div class="section-head" id="resources">
+    <div class="icon" style="background:var(--orange-dim)">⚙️</div>
+    <div><h2>Managing Resource Allocation</h2><p>Shares · Reservations · Limits · Resource Pools · CPU · Memory</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">VM Resource Allocation — Shares, Reservation, Limit</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Control</th><th>Definition</th><th>Example</th><th>When matters</th></tr>
+      <tr><td><b style="color:var(--indigo)">Shares</b></td><td>Relative weight during resource contention — more shares = higher priority</td><td>VM-A: 2000 shares; VM-B: 1000 shares → VM-A gets 2× CPU in contention</td><td>Only during resource contention</td></tr>
+      <tr><td><b style="color:var(--blue)">Reservation</b></td><td>Guaranteed minimum resources — always available, even under contention</td><td>Reserve 2 GHz CPU → VM always gets at least 2 GHz</td><td>Mission-critical VMs that need guaranteed resources</td></tr>
+      <tr><td><b style="color:var(--orange)">Limit</b></td><td>Maximum resources a VM can consume — caps usage</td><td>Limit 4 GHz CPU → VM never uses more than 4 GHz even if idle resources available</td><td>Cost chargeback, preventing resource hogging</td></tr>
+    </table></div>
+    <div class="code-box"><span class="cm">/* Resource Allocation Analogy */</span>
+<span class="hl">Shares</span>   → Like priority lanes: more shares = faster during congestion
+<span class="hl">Reserve</span>  → Like a reserved seat: guaranteed, no matter what
+<span class="hl">Limit</span>    → Like a speed limit: maximum allowed even if road is empty</div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> This is a very common 6-mark question. Define all three clearly with an analogy or example. Key: Shares = relative priority; Reservation = guarantee; Limit = cap. Shares only matter during contention.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">Resource Pools</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Resource Pool</strong> is a logical grouping of CPU and memory resources on an ESXi host or cluster. VMs placed in a resource pool share its allocated resources — allows hierarchical resource management.</div>
+    <div class="code-box"><span class="cm">/* Resource Pool Hierarchy Example */</span>
+
+<span class="hl">Cluster (Total: 64 vCPU, 256 GB RAM)</span>
+ ├── Resource Pool: Production (High Shares, 100% Reserve)
+ │    ├── VM: WebServer01
+ │    └── VM: DBServer01
+ ├── Resource Pool: Development (Low Shares, No Reserve)
+ │    ├── VM: DevVM01
+ │    └── VM: TestVM01
+ └── Resource Pool: QA (Medium Shares)
+      └── VM: QATestVM</div>
+    <ul class="card-list">
+      <li>Each pool has its own <b>Shares, Reservation, and Limit</b> settings</li>
+      <li>Pools can be nested — child pools inherit parent's available resources</li>
+      <li>Useful for <b>multi-tenant environments</b> and department-based resource management</li>
+    </ul>
+  </div>
+
+  <div class="card" id="memory">
+    <div class="card-top"><div class="card-title">ESXi Advanced Memory Technologies</div><span class="badge badge-red">🔴 Must Know</span></div>
+    <div class="def-box"><strong>ESXi uses multiple techniques</strong> to manage physical memory efficiently when VMs collectively request more memory than physically available — in order of preference (least to most disruptive).</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Technique</th><th>How It Works</th><th>Performance Impact</th></tr>
+      <tr><td><b style="color:var(--green)">Transparent Page Sharing (TPS)</b></td><td>Identical memory pages across VMs are deduplicated — shared read-only, copied on write (CoW). Saves memory.</td><td>Minimal — no performance hit</td></tr>
+      <tr><td><b style="color:var(--indigo)">Memory Ballooning</b></td><td>Balloon driver (in VMware Tools) inflates inside the guest — forces guest OS to reclaim memory from its own apps. ESXi reclaims freed pages.</td><td>Moderate — guest experiences memory pressure</td></tr>
+      <tr><td><b style="color:var(--orange)">Memory Compression</b></td><td>Before swapping, ESXi compresses pages into a compression cache — faster to decompress than swap from disk.</td><td>Moderate — CPU used for compression</td></tr>
+      <tr><td><b style="color:var(--red)">Host-Level Swapping</b></td><td>ESXi swaps VM memory pages to a swap file on disk (.vswp) when all other techniques exhausted.</td><td>Severe — disk I/O is orders of magnitude slower than RAM</td></tr>
+    </table></div>
+    <div class="code-box"><span class="cm">/* Memory Reclamation Order (ESXi Priority) */</span>
+
+<span class="hl"> 1. TPS (Transparent Page Sharing)</span>   <span class="cm">← no penalty</span>
+<span class="hl"> 2. Ballooning</span>                          <span class="cm">← minor penalty</span>
+<span class="hl"> 3. Compression</span>                          <span class="cm">← moderate penalty</span>
+<span class="hl"> 4. Swap to disk (.vswp)</span>                <span class="cm">← severe penalty ⚠️</span></div>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> This is THE most asked memory question in this unit. Must know all 4 techniques in order. Remember: Ballooning requires VMware Tools. Swapping is worst-case scenario.</div></div>
+  </div>
+
+  <!-- CARD: Memory Allocation Control -->
+  <div class="card">
+    <div class="card-top"><div class="card-title">Memory Allocation Control</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Memory Allocation Control</strong> refers to the mechanisms ESXi administrators use to manage how physical RAM is distributed across VMs — using Reservations, Limits, Shares, and memory overcommitment policies.</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Control Mechanism</th><th>Effect on Memory</th><th>Use Case</th></tr>
+      <tr><td><b style="color:var(--indigo)">Reservation</b></td><td>Guarantees a minimum amount of physical RAM always available to the VM — cannot be reclaimed by ESXi</td><td>Mission-critical VMs (DB servers, real-time apps)</td></tr>
+      <tr><td><b style="color:var(--orange)">Limit</b></td><td>Caps maximum memory the VM can use — even if more physical RAM is free</td><td>Dev/test VMs; prevent memory hogging</td></tr>
+      <tr><td><b style="color:var(--blue)">Shares</b></td><td>Relative priority during memory contention — High (20 shares/MB), Normal (10), Low (5)</td><td>Prioritize production VMs over dev VMs during pressure</td></tr>
+      <tr><td><b style="color:var(--green)">Memory Overcommitment</b></td><td>Total configured vRAM across VMs exceeds physical RAM — ESXi uses TPS/Balloon/Compression/Swap to manage</td><td>Environments where VMs don't all use max RAM simultaneously</td></tr>
+    </table></div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--green)">Swap File (.vswp)</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Created per VM when it powers on</li>
+          <li>Size = configured vRAM minus reservation</li>
+          <li>Located on VM's datastore by default</li>
+          <li>Used only as last resort memory reclamation</li>
+        </ul>
+      </div>
+      <div class="hcell"><h4 style="color:var(--purple)">Memory Hot-Add</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li>Add vRAM to a running VM without power cycle</li>
+          <li>Must be enabled in VM settings before power-on</li>
+          <li>Guest OS must support memory hot-add</li>
+          <li>Useful for scaling without downtime</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">High shares: <span>20 per MB</span></div>
+      <div class="marks-chip">Normal shares: <span>10 per MB</span></div>
+      <div class="marks-chip">Low shares: <span>5 per MB</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-top"><div class="card-title">CPU Resource Management</div><span class="badge badge-orange">🟠 High Priority</span></div>
+    <div class="def-box"><strong>Default CPU Allocation:</strong> Each VM gets equal shares of CPU by default (1000 shares per vCPU). ESXi's CPU scheduler manages allocation using a <strong>proportional share mechanism</strong>.</div>
+    <div class="hgrid">
+      <div class="hcell"><h4 style="color:var(--indigo)">CPU Ready</h4><p>Time a VM waits for a physical CPU to become available. High CPU Ready = over-provisioned host. Acceptable: &lt;10%</p></div>
+      <div class="hcell"><h4 style="color:var(--orange)">CPU Co-Stop</h4><p>Time SMP VMs wait for all vCPUs to be scheduled simultaneously. Issue for VMs with many vCPUs on busy hosts.</p></div>
+      <div class="hcell"><h4 style="color:var(--blue)">Hyper-Threading</h4><p>ESXi is aware of HT — treats logical cores (threads) separately. VMs can use HT cores but performance ≠ physical core.</p></div>
+      <div class="hcell"><h4 style="color:var(--green)">NUMA Awareness</h4><p>ESXi scheduler is NUMA-aware — tries to keep VM's vCPUs and memory on the same NUMA node for best performance.</p></div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Default shares: <span>1000 per vCPU</span></div>
+      <div class="marks-chip">High shares: <span>2000 per vCPU</span></div>
+      <div class="marks-chip">Low shares: <span>500 per vCPU</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ QUICK REVISION ═══ -->
+  <div class="section-head">
+    <div class="icon" style="background:var(--orange-dim)">📋</div>
+    <div><h2>Quick Revision — Unit III at a Glance</h2></div>
+  </div>
+  <div class="card" style="border-color:#818cf855">
+    <div class="card-title" style="margin-bottom:14px">🔑 Keywords & One-Liners</div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Term</th><th>One-Line Answer</th></tr>
+      <tr><td><b>.vmx</b></td><td>VM configuration file — CPU, RAM, device settings</td></tr>
+      <tr><td><b>.vmdk</b></td><td>Virtual disk file — contains OS and data</td></tr>
+      <tr><td><b>Thin Provisioning</b></td><td>Disk grows on demand — space-efficient but risk of over-commitment</td></tr>
+      <tr><td><b>Thick Eager Zeroed</b></td><td>Pre-allocated + zeroed — best I/O performance; used for FT and DB VMs</td></tr>
+      <tr><td><b>Snapshot</b></td><td>Point-in-time state capture; NOT a backup; delta files chain</td></tr>
+      <tr><td><b>Clone</b></td><td>Full copy of a running VM; can be powered on independently</td></tr>
+      <tr><td><b>Template</b></td><td>Gold image VM (cannot power on); used for standardized deployments</td></tr>
+      <tr><td><b>Customization Spec</b></td><td>Sets unique hostname/IP/SID when deploying from template; needs VMware Tools</td></tr>
+      <tr><td><b>Instant Clone</b></td><td>Fork of running VM; shares parent memory (CoW); millisecond creation</td></tr>
+      <tr><td><b>OVF</b></td><td>Open Virtualization Format — open standard multi-file VM package</td></tr>
+      <tr><td><b>OVA</b></td><td>Single .ova archive of OVF; easier to distribute</td></tr>
+      <tr><td><b>vApp</b></td><td>Container for multi-VM application; managed as one unit; exportable as OVF</td></tr>
+      <tr><td><b>Shares</b></td><td>Relative priority during contention; no effect when resources are free</td></tr>
+      <tr><td><b>Reservation</b></td><td>Guaranteed minimum resource always available to a VM</td></tr>
+      <tr><td><b>Limit</b></td><td>Maximum resource cap for a VM</td></tr>
+      <tr><td><b>TPS</b></td><td>Transparent Page Sharing — deduplicates identical memory pages across VMs</td></tr>
+      <tr><td><b>Ballooning</b></td><td>VMware Tools balloon driver forces guest OS to free memory; ESXi reclaims it</td></tr>
+      <tr><td><b>Memory Compression</b></td><td>Compresses VM memory pages before swapping — faster than disk swap</td></tr>
+      <tr><td><b>Host-Level Swap</b></td><td>Last resort — swaps VM pages to .vswp file on disk; very slow</td></tr>
+    </table></div>
+  </div>
+  <div class="card" style="border-color:#818cf855">
+    <div class="card-top"><div class="card-title">🎯 Most Likely Exam Questions — Unit III</div><span class="badge badge-red">🔴 Study These</span></div>
+    <div class="tbl-wrap"><table>
+      <tr><th>#</th><th>Question</th><th>Key Points</th></tr>
+      <tr><td>1</td><td>Explain VM internals and externals</td><td>Files (.vmx, .vmdk, .nvram, .vmsd, .log) + virtual hardware (vCPU, vRAM, vNIC, VMDK)</td></tr>
+      <tr><td>2</td><td>Explain advanced memory management techniques in ESXi</td><td>TPS → Ballooning → Compression → Swap (in order) with performance impact</td></tr>
+      <tr><td>3</td><td>Explain shares, reservation, and limit in vSphere</td><td>Definition + example + when each matters — classic 6-mark</td></tr>
+      <tr><td>4</td><td>Differentiate VM clone vs template</td><td>Table: can power on, purpose, customization spec, modification</td></tr>
+      <tr><td>5</td><td>Explain OVF/OVA templates — deploy, export, examine</td><td>OVF vs OVA format + 3 operations + Content Library</td></tr>
+      <tr><td>6</td><td>What is Instant Clone? How does it differ from regular clone?</td><td>Fork from running VM + memory sharing + CoW + use cases</td></tr>
+      <tr><td>7</td><td>Explain VM disk provisioning types</td><td>Thin vs Thick Lazy vs Thick Eager — definition + use case + performance</td></tr>
+    </table></div>
+  </div>
+</div>
+</body>
+</html>

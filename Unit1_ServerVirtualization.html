@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit I – Server Virtualization (VMware vSphere 6.7)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161a24;
+    --bg3: #1e2330;
+    --border: #2a3045;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --purple: #a78bfa;
+    --purple-dim: #6d4fc740;
+    --blue: #60a5fa;
+    --blue-dim: #3b82f620;
+    --green: #34d399;
+    --green-dim: #10b98120;
+    --orange: #fb923c;
+    --orange-dim: #f9731620;
+    --red: #f87171;
+    --red-dim: #ef444420;
+    --cyan: #22d3ee;
+    --cyan-dim: #06b6d420;
+    --yellow: #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ─── HEADER ─── */
+  .hero {
+    background: linear-gradient(135deg, #0f1117 0%, #1a1040 50%, #0f1a2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 32px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 60% -10%, #7c3aed22, transparent),
+                radial-gradient(ellipse 60% 40% at 10% 100%, #1d4ed822, transparent);
+  }
+  .hero-inner { max-width: 900px; margin: 0 auto; position: relative; }
+  .hero-badge {
+    display: inline-block;
+    background: var(--purple-dim);
+    border: 1px solid #7c3aed55;
+    color: var(--purple);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .hero h1 span { color: var(--purple); }
+  .hero p {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 600px;
+  }
+  .hero-meta {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .hero-meta span {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+  .hero-meta span b { color: var(--text); }
+
+  /* ─── LEGEND ─── */
+  .legend {
+    max-width: 900px; margin: 24px auto; padding: 0 16px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  /* ─── LAYOUT ─── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 16px 60px; }
+
+  /* ─── SECTION HEADER ─── */
+  .section-head {
+    display: flex; align-items: center; gap: 12px;
+    margin: 36px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-head .icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .section-head h2 {
+    font-size: 18px; font-weight: 700; color: #fff;
+  }
+  .section-head p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #3a4060; }
+  .card-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 16px; font-weight: 700; color: #fff;
+  }
+
+  /* ─── PRIORITY BADGES ─── */
+  .badge {
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+    white-space: nowrap; flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+  .badge-red  { background: var(--red-dim);    color: var(--red);    border: 1px solid #ef444440; }
+  .badge-orange{ background: var(--orange-dim); color: var(--orange); border: 1px solid #f9731640; }
+  .badge-green{ background: var(--green-dim);  color: var(--green);  border: 1px solid #10b98140; }
+
+  /* ─── DEFINITION BOX ─── */
+  .def-box {
+    background: #1a1f30;
+    border-left: 3px solid var(--purple);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .def-box strong { color: var(--purple); }
+
+  /* ─── TABLE ─── */
+  .tbl-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--bg3);
+    color: var(--muted);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 8px 12px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #1e2330;
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1e2330; }
+
+  /* ─── CODE / ASCII BOX ─── */
+  .code-box {
+    background: #0d1117;
+    border: 1px solid #2a3045;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #a5f3fc;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+  }
+  .code-box .cm  { color: var(--muted); }
+  .code-box .ky  { color: var(--purple); }
+  .code-box .st  { color: var(--green); }
+  .code-box .hl  { color: var(--yellow); }
+  .code-box .dim { color: #3a4060; }
+
+  /* ─── EXAM TIP ─── */
+  .tip {
+    background: linear-gradient(135deg, #1a1a10, #1e1a10);
+    border: 1px solid #fbbf2440;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 13px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .tip-text { color: var(--text); }
+  .tip-text b { color: var(--yellow); }
+
+  /* ─── LIST ─── */
+  ul.card-list { list-style: none; padding: 0; margin: 8px 0; }
+  ul.card-list li {
+    padding: 4px 0 4px 18px;
+    position: relative; font-size: 14px; color: var(--text);
+  }
+  ul.card-list li::before {
+    content: '▸';
+    position: absolute; left: 0;
+    color: var(--purple); font-size: 11px; top: 6px;
+  }
+
+  /* ─── MARKS CHIP ─── */
+  .marks-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;
+  }
+  .marks-chip {
+    font-size: 11px; font-weight: 600;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 3px 10px; border-radius: 6px;
+  }
+  .marks-chip span { color: var(--cyan); font-weight: 700; }
+
+  /* ─── HIGHLIGHT GRID ─── */
+  .hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media(max-width:580px){ .hgrid { grid-template-columns: 1fr; } }
+  .hcell {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .hcell h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .hcell p { font-size: 13px; color: var(--muted); }
+
+  /* ─── TAG ─── */
+  .tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 2px 8px; border-radius: 4px;
+    margin: 2px;
+  }
+
+  /* ─── FLOW DIAGRAM ─── */
+  .flow { margin: 14px 0; }
+  .flow-step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  .flow-step .num {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .flow-arrow {
+    text-align: center; color: var(--border);
+    font-size: 14px; margin: 2px 0;
+  }
+
+  /* ─── TWO COL ─── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media(max-width:600px){ .two-col { grid-template-columns: 1fr; } }
+
+  /* ─── CHAPTER DIVIDER ─── */
+  .ch-divider {
+    margin: 10px 0 0;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ch-divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── TOC ─── */
+  .toc {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .toc h3 { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  @media(max-width:560px){ .toc-grid { grid-template-columns: 1fr; } }
+  .toc-link {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text);
+    padding: 5px 8px; border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .toc-link:hover { background: var(--bg3); }
+  .toc-link .tl { color: var(--purple); font-size: 11px; }
+
+  /* ─── INFOROW ─── */
+  .inforow {
+    display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; font-size: 13px;
+  }
+  .inforow .lbl {
+    min-width: 130px; font-weight: 600; color: var(--muted); flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">MSc CS · Sem IV · Mumbai University</div>
+    <h1>Unit I — <span>VMware vSphere 6.7</span><br>Exam Study Guide</h1>
+    <p>Server Virtualization · Based on teacher's notes · Focused on exam-relevant topics</p>
+    <div class="hero-meta">
+      <span>📋 <b>12 Marks</b> per question</span>
+      <span>✍️ <b>2 sub-questions</b> × 6 marks</span>
+      <span>📚 <b>3 Chapters</b> covered</span>
+      <span>⏱ <b>~30 min</b> per unit</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> 🔴 Must Know — Very likely to appear</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> 🟠 High Priority — Frequently tested</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> 🟢 Good to Know — May come as part-b</div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h3>Topics Covered</h3>
+    <div class="toc-grid">
+      <a class="toc-link" href="#ch1"><span class="tl">CH1</span> Introducing VMware vSphere 6.7</a>
+      <a class="toc-link" href="#ch2"><span class="tl">CH2</span> ESXi Architecture & Installation</a>
+      <a class="toc-link" href="#vcenter"><span class="tl">CH3</span> vCenter Server & SSO</a>
+      <a class="toc-link" href="#psc"><span class="tl">CH3</span> Platform Services Controller (PSC)</a>
+      <a class="toc-link" href="#webclient"><span class="tl">CH3</span> vSphere Web Client</a>
+      <a class="toc-link" href="#postinstall"><span class="tl">CH2</span> Post-Installation Configuration</a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- CHAPTER 1 -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-head" id="ch1">
+    <div class="icon" style="background:#6d4fc720">🌐</div>
+    <div>
+      <h2>Chapter 1 — Introducing VMware vSphere 6.7</h2>
+      <p>Products, Features, Licensing, Why vSphere?</p>
+    </div>
+  </div>
+
+  <!-- CARD: What is vSphere 6.7 -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">What is VMware vSphere 6.7?</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="def-box">
+      <strong>Definition:</strong> VMware vSphere 6.7 is a <strong>server virtualization platform</strong> (suite) that enables organizations to consolidate workloads, optimize resources, and simplify IT management. Its core is the <strong>VMware ESXi hypervisor</strong>.
+    </div>
+    <ul class="card-list">
+      <li>Provides a foundation for virtual machines and management tools</li>
+      <li>Designed for high performance, reliable management, and scalability</li>
+      <li>Integrates with modern hardware efficiently</li>
+      <li>Central suite for server virtualization across enterprise IT</li>
+    </ul>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> Define vSphere as a "suite/platform" not just a product. Mention ESXi hypervisor as its core. 2–3 lines definition + key use case = safe 3 marks.</div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Expected: <span>Definition + Features</span></div>
+      <div class="marks-chip">Marks: <span>~3–4</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: Products in vSphere Suite -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Products in the vSphere Suite</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Product</th><th>Purpose</th></tr>
+        <tr><td><b style="color:var(--purple)">VMware ESXi</b></td><td>The hypervisor layer — powers all virtualization</td></tr>
+        <tr><td><b style="color:var(--blue)">vCenter Server</b></td><td>Centralized management for ESXi hosts and VMs</td></tr>
+        <tr><td><b style="color:var(--cyan)">vSphere Client</b></td><td>Browser-based UI to manage the environment</td></tr>
+        <tr><td><b style="color:var(--green)">vMotion / Storage vMotion</b></td><td>Live migration of VMs and storage with minimal downtime</td></tr>
+        <tr><td><b style="color:var(--orange)">DRS (Distributed Resource Scheduler)</b></td><td>Balances workloads across hosts automatically</td></tr>
+        <tr><td><b style="color:var(--red)">HA (High Availability)</b></td><td>Maintains service availability on host failure</td></tr>
+        <tr><td><b style="color:var(--yellow)">FT (Fault Tolerance)</b></td><td>Maintains data integrity — zero downtime</td></tr>
+        <tr><td><b style="color:var(--muted)">Host Profiles, Storage DRS, Content Library</b></td><td>Advanced management and automation features</td></tr>
+      </table>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> List at least 6 products with a one-line purpose each. ESXi + vCenter + vMotion + DRS + HA + FT = core six. Never miss these.</div>
+    </div>
+  </div>
+
+  <!-- CARD: Key Features -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Key Features of VMware vSphere 6.7</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="hgrid">
+      <div class="hcell">
+        <h4 style="color:var(--purple)">🖥 HTML5-Based Interface</h4>
+        <p>Modern UI with improved usability and feature parity for admins</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--red)">🔒 Security Enhancements</h4>
+        <p>VM Encryption, vSphere Encrypted vMotion, vTPM, Microsoft Credential Guard integration</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--green)">⚡ Performance Improvements</h4>
+        <p>Persistent Memory (PMEM) support for faster application performance</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--blue)">🤖 Automation & Dev Tools</h4>
+        <p>REST APIs and open-source SDKs for seamless automation</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--orange)">🎮 NVIDIA GPU Virtualization</h4>
+        <p>Supports AI, ML, and big data workloads</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--cyan)">🔧 AMD EPYC Gen 2 Support</h4>
+        <p>Up-to-date hardware compatibility for efficient computing</p>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">For 6-mark answer: <span>List 4–5 features with brief explanation</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: Licensing -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Licensing VMware vSphere 6.7</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="def-box">
+      <strong>Licensing Model:</strong> VMware vSphere 6.7 uses <strong>per-CPU, per-host, or per-feature</strong> licensing models, allowing organizations to scale as business requirements grow.
+    </div>
+    <ul class="card-list">
+      <li>Multiple editions tailored for different organization sizes (Standard, Enterprise, Enterprise Plus)</li>
+      <li>Per-CPU licensing — licenses tied to physical processors</li>
+      <li>Enhanced enterprise editions include additional features for security, automation, and analytics</li>
+      <li>Licenses can be added/scaled as infrastructure grows</li>
+    </ul>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> Mention 3 editions + 3 licensing models. Usually a short sub-question worth 3 marks.</div>
+    </div>
+  </div>
+
+  <!-- CARD: Why Choose vSphere -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Why Choose VMware vSphere?</div>
+      <span class="badge badge-green">🟢 Good to Know</span>
+    </div>
+    <ul class="card-list">
+      <li><b style="color:var(--red)">High Availability & Fault Tolerance</b> — for mission-critical applications</li>
+      <li><b style="color:var(--blue)">Outstanding Scalability</b> — from small businesses to large enterprise data centers</li>
+      <li><b style="color:var(--purple)">Advanced Security</b> — data at rest and in transit</li>
+      <li><b style="color:var(--green)">Simplified Management</b> — unified visibility including hybrid cloud</li>
+      <li><b style="color:var(--orange)">Hardware Compatibility</b> — extensive HCL support and optimized performance</li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- CHAPTER 2 -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-head" id="ch2">
+    <div class="icon" style="background:#1d4ed820">🖧</div>
+    <div>
+      <h2>Chapter 2 — Planning & Installing VMware ESXi</h2>
+      <p>Architecture · Hypervisor · Components · Deployment · Post-Install</p>
+    </div>
+  </div>
+
+  <!-- CARD: ESXi Architecture -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">ESXi Architecture Overview</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="def-box">
+      <strong>ESXi</strong> is a <strong>bare-metal hypervisor</strong> built on the <strong>VMkernel</strong> — a lightweight, purpose-built OS that directly manages all hardware resources, VMs, and critical system processes. It eliminates the traditional "service console."
+    </div>
+    <div class="code-box"><span class="cm">/* ESXi Two-Tier Architecture */</span>
+
+<span class="hl">┌─────────────────────────────────────────────────────┐</span>
+<span class="hl">│            USER-WORLD PROCESSES (Top Layer)         │</span>
+<span class="hl">│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────┐  │</span>
+<span class="hl">│  │  DCUI    │ │  hostd   │ │  vpxa    │ │  VMs  │  │</span>
+<span class="hl">│  │(Local UI)│ │(Local Mg)│ │(vCtr Agt)│ │       │  │</span>
+<span class="hl">│  └──────────┘ └──────────┘ └──────────┘ └───────┘  │</span>
+<span class="hl">├─────────────────────────────────────────────────────┤</span>
+<span class="hl">│               VMkernel (Base Layer)                 │</span>
+<span class="hl">│   CPU Scheduler │ Memory Mgmt │ Storage │ Network   │</span>
+<span class="hl">│          Resource Scheduling & Isolation            │</span>
+<span class="hl">├─────────────────────────────────────────────────────┤</span>
+<span class="hl">│              Physical Hardware (Server)             │</span>
+<span class="hl">│        CPU  │  RAM  │  Storage  │  Network NIC      │</span>
+<span class="hl">└─────────────────────────────────────────────────────┘</span></div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> Draw the 2-tier diagram. State that ESXi = bare-metal hypervisor, VMkernel = core OS, no service console. This alone can fetch you 4–5 marks.</div>
+    </div>
+  </div>
+
+  <!-- CARD: ESXi Components -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">ESXi Components (Must Memorize)</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Component</th><th>Full Form</th><th>Role</th></tr>
+        <tr><td><b style="color:var(--purple)">VMkernel</b></td><td>—</td><td>Core OS of ESXi — manages CPU, memory, storage, network; provides isolation</td></tr>
+        <tr><td><b style="color:var(--blue)">DCUI</b></td><td>Direct Console User Interface</td><td>Local text-based console for initial setup (IP, root password)</td></tr>
+        <tr><td><b style="color:var(--green)">hostd</b></td><td>Host Daemon</td><td>Local management service — processes Host Client requests</td></tr>
+        <tr><td><b style="color:var(--orange)">vpxa</b></td><td>vCenter Agent</td><td>Communicates between ESXi host and vCenter Server</td></tr>
+        <tr><td><b style="color:var(--cyan)">VMM</b></td><td>Virtual Machine Monitor</td><td>Runs each VM — handles VM instructions</td></tr>
+        <tr><td><b style="color:var(--red)">CIM Broker</b></td><td>Common Information Model</td><td>Third-party hardware monitoring integration</td></tr>
+        <tr><td><b style="color:var(--yellow)">Datastores</b></td><td>—</td><td>Storage locations for VMs — VMFS / NFS / vSAN</td></tr>
+        <tr><td><b style="color:var(--muted)">vSphere Host Client</b></td><td>—</td><td>Browser-based UI to manage single ESXi host</td></tr>
+      </table>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> "Explain ESXi components" = table with 5–6 rows gets full 6 marks. Focus on VMkernel, DCUI, hostd, vpxa, VMM.</div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">ESXi footprint: <span>~150 MB</span></div>
+      <div class="marks-chip">No service console: <span>Better security</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: Planning vSphere Deployment -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Planning a vSphere Deployment</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="hgrid">
+      <div class="hcell">
+        <h4 style="color:var(--blue)">Hardware Requirements</h4>
+        <ul class="card-list">
+          <li>CPU: Intel VT-x or AMD-V support (required)</li>
+          <li>Minimum 4 GB RAM (8+ GB recommended)</li>
+          <li>Supported storage controllers & NICs</li>
+          <li>Must be on VMware HCL (Hardware Compatibility List)</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--green)">Workload Planning</h4>
+        <ul class="card-list">
+          <li>Estimate number of VMs needed</li>
+          <li>CPU/RAM/Storage capacity planning</li>
+          <li>Performance requirements (IOPS, throughput)</li>
+          <li>At least 2 hosts recommended for redundancy</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--purple)">Storage Architecture</h4>
+        <ul class="card-list">
+          <li><b>DAS</b> — Direct-Attached Storage</li>
+          <li><b>NAS</b> — Network-Attached Storage</li>
+          <li><b>SAN</b> — Storage Area Network</li>
+          <li><b>vSAN</b> — Hyperconverged (VMware-native)</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--orange)">Network Design</h4>
+        <ul class="card-list">
+          <li>Separate VMkernel interfaces for: Management, vMotion, iSCSI, FT</li>
+          <li>Use VLANs for traffic segmentation</li>
+          <li>Multiple NICs for redundancy</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> "Planning" questions = mention hardware (HCL, CPU, RAM) + storage options (DAS/NAS/SAN/vSAN) + network design. Cover 3 areas minimum.</div>
+    </div>
+  </div>
+
+  <!-- CARD: Deployment Methods -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">ESXi Deployment Methods</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Method</th><th>How It Works</th><th>Best For</th></tr>
+        <tr>
+          <td><b style="color:var(--green)">Interactive Installation</b></td>
+          <td>Boot from USB/CD, select disk, set root password via wizard, configure via DCUI</td>
+          <td>Small deployments, single hosts, testing</td>
+        </tr>
+        <tr>
+          <td><b style="color:var(--orange)">Unattended (Scripted)</b></td>
+          <td>Use kickstart scripts (<code>ks=file://path</code>) for automated deployment; specify config at install boot prompt</td>
+          <td>Medium deployments, repeatable installs</td>
+        </tr>
+        <tr>
+          <td><b style="color:var(--purple)">vSphere Auto Deploy</b></td>
+          <td>Network-based (PXE boot) provisioning using rules and host profiles; stateless or stateful</td>
+          <td>Large-scale enterprise environments, 100+ hosts</td>
+        </tr>
+      </table>
+    </div>
+    <div class="code-box"><span class="cm"># Unattended / Kickstart Example Boot Param</span>
+<span class="ky">ks=</span><span class="st">file:///path/to/ks.cfg</span>
+<span class="cm"># or from network:</span>
+<span class="ky">ks=</span><span class="st">http://server/ks.cfg</span></div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> "Explain 3 methods of ESXi installation" is a classic 6-mark question. Give method name + how it works + when to use = guaranteed marks.</div>
+    </div>
+  </div>
+
+  <!-- CARD: Post-Installation -->
+  <div class="card" id="postinstall">
+    <div class="card-top">
+      <div class="card-title">Post-Installation Configuration</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="num" style="background:var(--purple-dim);color:var(--purple)">1</div>
+        <div><b>Access via DCUI</b> — Press F2 at ESXi console → System Customization menu</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--blue-dim);color:var(--blue)">2</div>
+        <div><b>Set Root Password</b> + configure SSH/Shell timeouts + apply license key</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--green-dim);color:var(--green)">3</div>
+        <div><b>Configure Management Network</b> → NIC selection, Static IP, Subnet Mask, Gateway, VLAN, DNS, Hostname</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--orange-dim);color:var(--orange)">4</div>
+        <div><b>Restart Management Network</b> → Test connectivity ("Test Management Network")</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--cyan-dim);color:var(--cyan)">5</div>
+        <div><b>Configure NTP</b> (Time Synchronization) — essential for logs, domain integration</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--purple-dim);color:var(--purple)">6</div>
+        <div><b>Configure DNS / Name Resolution</b> — hostname resolution + vCenter/AD integration</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--blue-dim);color:var(--blue)">7</div>
+        <div><b>Configure Syslog</b> — centralized log forwarding for security and audit</div>
+      </div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> "Post-installation steps" = draw the flow above. Always mention: DCUI → Management Network → NTP → DNS. These 4 are core steps.</div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">DCUI shortcut: <span>Press F2</span></div>
+      <div class="marks-chip">NTP importance: <span>Logs + Domain Auth</span></div>
+      <div class="marks-chip">Test network: <span>"Test Management Network" option</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: vSphere Host Client -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">vSphere Host Client</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="def-box">
+      <strong>vSphere Host Client</strong> is a <strong>browser-based management interface</strong> used to manage a <strong>single ESXi host</strong> directly. It replaced the old C# thick client.
+    </div>
+    <div class="two-col">
+      <div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700">What you CAN do:</p>
+        <ul class="card-list">
+          <li>Create and manage VMs</li>
+          <li>Manage datastores and networking</li>
+          <li>Set management users and roles</li>
+          <li>Monitor host performance</li>
+          <li>Configure storage, NTP, SSH</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700">Key difference from Web Client:</p>
+        <ul class="card-list">
+          <li><b>Host Client</b> → manages <b>one ESXi host</b></li>
+          <li><b>vSphere Web Client</b> → manages <b>entire vCenter infrastructure</b></li>
+          <li>Host Client = no vCenter needed</li>
+          <li>Web Client = requires vCenter Server</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD: Network Integration -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Network Integration with Infrastructure</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="def-box">
+      <strong>Network Integration</strong> refers to connecting ESXi hosts into the existing physical network infrastructure using <strong>multiple NICs</strong> for traffic separation, redundancy, and security.
+    </div>
+    <div class="tbl-wrap"><table>
+      <tr><th>Traffic Type</th><th>VMkernel Port Needed</th><th>Best Practice</th></tr>
+      <tr><td><b style="color:var(--purple)">Management</b></td><td>Management VMkernel</td><td>Dedicated NIC or VLAN; used for vCenter comm, SSH, DCUI</td></tr>
+      <tr><td><b style="color:var(--blue)">vMotion</b></td><td>vMotion VMkernel</td><td>Dedicated 10 GbE NIC; must not share with management</td></tr>
+      <tr><td><b style="color:var(--green)">VM Traffic</b></td><td>VM Port Group</td><td>Separate from management; can use VLANs for segmentation</td></tr>
+      <tr><td><b style="color:var(--orange)">iSCSI / NFS</b></td><td>Storage VMkernel</td><td>Dedicated NIC(s) for storage traffic; jumbo frames recommended</td></tr>
+      <tr><td><b style="color:var(--red)">Fault Tolerance</b></td><td>FT Logging VMkernel</td><td>Dedicated 10 GbE; low-latency path required</td></tr>
+    </table></div>
+    <ul class="card-list">
+      <li>Use <b>VLANs</b> to segment traffic types on shared physical switches</li>
+      <li>Use <b>multiple NICs (NIC Teaming)</b> for redundancy — if one NIC fails, traffic continues</li>
+      <li>Connect ESXi host NICs to <b>separate physical switches</b> for full redundancy</li>
+      <li>Ensure management NIC is on a dedicated, secured management VLAN</li>
+    </ul>
+    <div class="tip"><div class="tip-icon">💡</div><div class="tip-text"><b>Exam Tip:</b> Network integration = traffic separation (table of 5 types) + NIC redundancy + VLAN segmentation. Draw a simple diagram showing management, vMotion, VM, and storage on separate VMkernel ports.</div></div>
+  </div>
+
+  <!-- CARD: Time Sync & Name Resolution (dedicated) -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">Time Synchronization (NTP) & Name Resolution (DNS)</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="hgrid">
+      <div class="hcell">
+        <h4 style="color:var(--purple)">Time Synchronization — NTP</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li><b>NTP (Network Time Protocol)</b> keeps all ESXi hosts and VMs in time sync</li>
+          <li>Required for: <b>Kerberos authentication</b> (5-min tolerance), log correlation, certificates</li>
+          <li>Configure in DCUI or Host Client → System → Time Configuration</li>
+          <li>Point to reliable NTP server (e.g., pool.ntp.org or internal NTP)</li>
+          <li>vCenter Server must also sync to the same NTP source</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--blue)">Name Resolution — DNS</h4>
+        <ul class="card-list" style="font-size:12px">
+          <li><b>DNS (Domain Name System)</b> resolves hostnames to IP addresses</li>
+          <li>ESXi must resolve its own hostname (forward + reverse DNS)</li>
+          <li>Required for: vCenter registration, SSO, AD integration, certificates</li>
+          <li>Configure: Primary DNS + Secondary DNS + Search Domain</li>
+          <li>Also configure local <b>/etc/hosts</b> as fallback for critical entries</li>
+        </ul>
+      </div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">NTP failure effect: <span>Kerberos auth fails if &gt;5 min drift</span></div>
+      <div class="marks-chip">DNS failure effect: <span>vCenter cannot communicate with hosts</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- CHAPTER 3 -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-head" id="vcenter">
+    <div class="icon" style="background:#10b98120">⚙️</div>
+    <div>
+      <h2>Chapter 3 — Installing & Configuring vCenter Server</h2>
+      <p>vCenter Server · SSO · Platform Services Controller · Web Client</p>
+    </div>
+  </div>
+
+  <!-- CARD: vCenter Server -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">vCenter Server — Introduction</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="def-box">
+      <strong>vCenter Server</strong> is a <strong>centralized management platform</strong> for VMware vSphere that allows administrators to manage <strong>multiple ESXi hosts and VMs</strong> from a single interface. It is deployed as a <strong>VCSA</strong> (vCenter Server Appliance) — a pre-configured virtual machine.
+    </div>
+    <div class="hgrid">
+      <div class="hcell">
+        <h4 style="color:var(--purple)">Core Functions</h4>
+        <ul class="card-list">
+          <li>Centralized management (single-pane-of-glass)</li>
+          <li>Resource pooling and allocation</li>
+          <li>Workflow automation</li>
+          <li>Deep performance monitoring</li>
+        </ul>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--blue)">Advanced Features Enabled</h4>
+        <ul class="card-list">
+          <li>vSphere High Availability (HA)</li>
+          <li>Fault Tolerance (FT)</li>
+          <li>Distributed Resource Scheduler (DRS)</li>
+          <li>vMotion and Storage vMotion</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:12px">
+      <table>
+        <tr><th>Key Component</th><th>Role</th></tr>
+        <tr><td><b style="color:var(--purple)">vSphere Client</b></td><td>Web-based UI for managing the entire environment</td></tr>
+        <tr><td><b style="color:var(--blue)">vCenter Database</b></td><td>Stores inventory, security roles, performance data</td></tr>
+        <tr><td><b style="color:var(--green)">vCenter SSO</b></td><td>Authentication service for the vCenter environment</td></tr>
+      </table>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> "Why is vCenter important?" — Without vCenter, you cannot use HA, DRS, vMotion, or FT. These features ONLY work with vCenter. This is a scoring point.</div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Deployment: <span>VCSA (Virtual Appliance)</span></div>
+      <div class="marks-chip">Also available on: <span>Windows Server</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: vCenter vs ESXi -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">vCenter Server vs ESXi Host — Key Differences</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Feature</th><th>ESXi Host</th><th>vCenter Server</th></tr>
+        <tr><td>Primary Role</td><td>Runs virtual machines (hypervisor)</td><td>Manages multiple ESXi hosts centrally</td></tr>
+        <tr><td>HA / FT / DRS</td><td>❌ Not available standalone</td><td>✅ Fully available</td></tr>
+        <tr><td>vMotion</td><td>❌ Cannot perform</td><td>✅ Orchestrates migrations</td></tr>
+        <tr><td>Management Scope</td><td>Single host only</td><td>Entire datacenter / multiple clusters</td></tr>
+        <tr><td>Authentication</td><td>Local accounts</td><td>SSO + AD + LDAP integration</td></tr>
+        <tr><td>UI</td><td>Host Client (browser)</td><td>vSphere Web Client (HTML5)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- CARD: SSO -->
+  <div class="card">
+    <div class="card-top">
+      <div class="card-title">vCenter Single Sign-On (SSO)</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="def-box">
+      <strong>vCenter SSO</strong> is a <strong>centralized authentication and identity management service</strong> that allows users to <strong>log in once</strong> and access all vSphere components without re-entering credentials.
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin:10px 0 6px;font-weight:700">Authentication Workflow:</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="num" style="background:var(--purple-dim);color:var(--purple)">1</div>
+        <div>User logs in → <b>vSphere Web Client / Host Client</b></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--blue-dim);color:var(--blue)">2</div>
+        <div>Credentials sent to <b>SSO Service</b></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--green-dim);color:var(--green)">3</div>
+        <div>SSO verifies via <b>AD / LDAP / vsphere.local</b></div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--orange-dim);color:var(--orange)">4</div>
+        <div>If valid → SSO issues a <b>secure token</b> (SAML)</div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">
+        <div class="num" style="background:var(--cyan-dim);color:var(--cyan)">5</div>
+        <div>Token grants access to <b>all connected VMware services</b> — no further logins</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:700">Supported Identity Sources:</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="tag" style="color:var(--blue)">Active Directory (AD)</span>
+      <span class="tag" style="color:var(--green)">LDAP Directories</span>
+      <span class="tag" style="color:var(--purple)">vsphere.local (SSO local)</span>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700">Key Benefits:</p>
+    <div class="hgrid">
+      <div class="hcell">
+        <h4 style="color:var(--purple)">Single Login</h4>
+        <p>One authentication → access all VMware services</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--green)">Scalability</h4>
+        <p>Grows with infrastructure, no per-host config needed</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--red)">Improved Security</h4>
+        <p>Token-based, MFA support, reduced password exposure</p>
+      </div>
+      <div class="hcell">
+        <h4 style="color:var(--blue)">Central User Management</h4>
+        <p>Add identity sources, assign roles, manage AD groups</p>
+      </div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> Draw the 5-step SSO flow. Mention: identity sources (AD/LDAP/vsphere.local) + SAML token + benefits. "Explain SSO" = classic 6-mark question.</div>
+    </div>
+  </div>
+
+  <!-- CARD: PSC -->
+  <div class="card" id="psc">
+    <div class="card-top">
+      <div class="card-title">Platform Services Controller (PSC)</div>
+      <span class="badge badge-red">🔴 Must Know</span>
+    </div>
+    <div class="def-box">
+      <strong>PSC (Platform Services Controller)</strong> is the backbone infrastructure component in vSphere 6.x that provides <strong>centralized security, identity, and licensing services</strong> to vCenter Server. Introduced in vSphere 6.0.
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>PSC Service / Component</th><th>What It Does</th></tr>
+        <tr><td><b style="color:var(--purple)">vCenter SSO</b></td><td>Single Sign-On — secure authentication for users and services</td></tr>
+        <tr><td><b style="color:var(--blue)">VMCA</b> (VMware Certificate Authority)</td><td>Issues and manages SSL certificates; supports custom certs</td></tr>
+        <tr><td><b style="color:var(--green)">VECS</b> (VMware Endpoint Cert Store)</td><td>Stores and manages endpoint certificates</td></tr>
+        <tr><td><b style="color:var(--orange)">VMware License Service</b></td><td>Centralized license management; replicated across all PSC instances</td></tr>
+        <tr><td><b style="color:var(--cyan)">vmdir</b> (VMware Directory Service)</td><td>LDAP directory — stores auth, cert, and license info; multi-master replication</td></tr>
+        <tr><td><b style="color:var(--red)">STS</b> (Security Token Service)</td><td>SAML token exchange for secure inter-service communication</td></tr>
+        <tr><td><b style="color:var(--yellow)">Component Manager</b></td><td>Service registration and lookup for VMware products</td></tr>
+        <tr><td><b style="color:var(--muted)">HTTP Reverse Proxy</b></td><td>Entry point for secure communication between services</td></tr>
+      </table>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted);margin:14px 0 8px;font-weight:700">PSC Deployment Topologies:</p>
+    <div class="code-box"><span class="cm">/* Topology 1: Embedded PSC */</span>
+<span class="hl">  ┌──────────────────────────────┐</span>
+<span class="hl">  │   vCenter Server             │</span>
+<span class="hl">  │   ┌──────────────────────┐   │</span>
+<span class="hl">  │   │   PSC (Embedded)     │   │</span>
+<span class="hl">  │   └──────────────────────┘   │</span>
+<span class="hl">  └──────────────────────────────┘</span>
+  <span class="cm">→ Simplest setup; PSC inside vCenter VM</span>
+
+<span class="cm">/* Topology 2: External PSC */</span>
+<span class="hl">  ┌──────────────┐   ┌──────────────┐</span>
+<span class="hl">  │ vCenter-1    │   │ vCenter-2    │</span>
+<span class="hl">  └──────┬───────┘   └───────┬──────┘</span>
+<span class="hl">         └────────┬──────────┘</span>
+<span class="hl">            ┌─────▼──────┐</span>
+<span class="hl">            │ Shared PSC │  ← both vCenters use one PSC</span>
+<span class="hl">            └────────────┘</span>
+  <span class="cm">→ Multiple vCenters share PSC; enhanced linked mode</span></div>
+
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> "Explain PSC and its components" = table of 6–7 services + 2 deployment topologies. VMCA, VECS, vmdir, STS are frequently asked. PSC introduced in vSphere 6.0.</div>
+    </div>
+    <div class="marks-row">
+      <div class="marks-chip">Introduced: <span>vSphere 6.0</span></div>
+      <div class="marks-chip">Topologies: <span>Embedded / External / Redundant</span></div>
+      <div class="marks-chip">vmdir: <span>Multi-master replication</span></div>
+    </div>
+  </div>
+
+  <!-- CARD: vSphere Web Client -->
+  <div class="card" id="webclient">
+    <div class="card-top">
+      <div class="card-title">vSphere Web Client for Administration</div>
+      <span class="badge badge-orange">🟠 High Priority</span>
+    </div>
+    <div class="def-box">
+      <strong>vSphere Web Client</strong> is the <strong>primary browser-based interface</strong> that connects to <b>vCenter Server</b> and exposes the <strong>full range of administrative features</strong> for the entire vSphere environment. Access: <code>https://vcenter-ip/ui</code>
+    </div>
+    <div class="two-col">
+      <div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700">What admins can do:</p>
+        <ul class="card-list">
+          <li>Provision and deploy virtual machines</li>
+          <li>Monitor resource usage and performance (real-time)</li>
+          <li>Manage user access and permissions (RBAC)</li>
+          <li>Configure ESXi hosts, licensing, certificates</li>
+          <li>Control VM lifecycle (power on/off, upgrade hardware version)</li>
+          <li>Access VM consoles through the browser</li>
+          <li>Configure distributed switches, storage, clusters</li>
+          <li>Monitor event logs, alarms, and tasks</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700">Home screen areas:</p>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="tag" style="color:var(--purple)">🖥 Hosts and Clusters</span>
+          <span class="tag" style="color:var(--blue)">📁 VMs and Templates</span>
+          <span class="tag" style="color:var(--green)">💾 Storage (Datastores)</span>
+          <span class="tag" style="color:var(--orange)">🌐 Networking</span>
+          <span class="tag" style="color:var(--cyan)">📋 Tasks and Events</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-top:12px;font-weight:700">Key advantages:</p>
+        <ul class="card-list">
+          <li>Cross-platform (any OS, any browser)</li>
+          <li>Third-party plug-in integration</li>
+          <li>Role-based access control (RBAC)</li>
+          <li>AD integration for streamlined auth</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text"><b>Exam Tip:</b> Always contrast Host Client vs Web Client in any answer — Host Client = single ESXi host, Web Client = entire vCenter infrastructure. This shows understanding.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- QUICK REVISION CARD -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="section-head">
+    <div class="icon" style="background:#f9731620">📋</div>
+    <div>
+      <h2>Quick Revision — Unit I at a Glance</h2>
+      <p>Last-minute review before your exam</p>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:#7c3aed55">
+    <div class="card-title" style="margin-bottom:14px">🔑 High-Value Keywords & One-Liners</div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Term</th><th>One-Line Answer</th></tr>
+        <tr><td><b>vSphere 6.7</b></td><td>Server virtualization suite by VMware; core = ESXi hypervisor</td></tr>
+        <tr><td><b>ESXi</b></td><td>Bare-metal type-1 hypervisor; ~150 MB footprint; no service console</td></tr>
+        <tr><td><b>VMkernel</b></td><td>Core OS of ESXi; manages CPU, memory, storage, network</td></tr>
+        <tr><td><b>DCUI</b></td><td>Direct Console UI for local ESXi setup (F2 to access)</td></tr>
+        <tr><td><b>hostd</b></td><td>Local management daemon on ESXi</td></tr>
+        <tr><td><b>vpxa</b></td><td>vCenter Agent on ESXi — communication bridge</td></tr>
+        <tr><td><b>vCenter Server</b></td><td>Centralized management; enables HA, DRS, vMotion, FT</td></tr>
+        <tr><td><b>VCSA</b></td><td>vCenter Server Appliance — pre-configured VM form of vCenter</td></tr>
+        <tr><td><b>SSO</b></td><td>Single Sign-On; one login → access all VMware services via SAML token</td></tr>
+        <tr><td><b>PSC</b></td><td>Platform Services Controller; provides SSO, VMCA, License, vmdir</td></tr>
+        <tr><td><b>VMCA</b></td><td>VMware Certificate Authority — manages SSL certs</td></tr>
+        <tr><td><b>vmdir</b></td><td>VMware Directory Service — LDAP store for auth/cert/license data</td></tr>
+        <tr><td><b>STS</b></td><td>Security Token Service — SAML tokens for service communication</td></tr>
+        <tr><td><b>HCL</b></td><td>Hardware Compatibility List — certified hardware for ESXi</td></tr>
+        <tr><td><b>NTP</b></td><td>Network Time Protocol — time sync; required for logs and domain auth</td></tr>
+        <tr><td><b>Auto Deploy</b></td><td>Network PXE-based stateless ESXi deployment for large scale</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- LIKELY QUESTIONS -->
+  <!-- ══════════════════════════════════════════ -->
+  <div class="card" style="border-color:#10b98155">
+    <div class="card-top">
+      <div class="card-title">🎯 Most Likely Exam Questions — Unit I</div>
+      <span class="badge badge-red">🔴 Study These</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>#</th><th>Question</th><th>Marks</th><th>Key Points to Cover</th></tr>
+        <tr>
+          <td>1</td>
+          <td>Explain ESXi architecture with a neat diagram</td>
+          <td>6</td>
+          <td>VMkernel + User-World processes + draw 2-tier diagram + no service console</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Explain the components of VMware ESXi</td>
+          <td>6</td>
+          <td>VMkernel, DCUI, hostd, vpxa, VMM, datastores — table with purpose</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Explain the 3 methods of ESXi installation</td>
+          <td>6</td>
+          <td>Interactive + Unattended (kickstart ks=) + Auto Deploy — with use case</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>What is vCenter Server? Explain its core functions</td>
+          <td>6</td>
+          <td>Definition + VCSA + functions (HA/DRS/vMotion) + components (SSO, DB, UI)</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Explain vCenter SSO with authentication workflow</td>
+          <td>6</td>
+          <td>Definition + 5-step flow diagram + identity sources + 4 benefits</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Explain PSC and list its services/components</td>
+          <td>6</td>
+          <td>Definition + table of 6 services (SSO, VMCA, VECS, vmdir, STS, License) + 2 topologies</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Explain products in the vSphere suite</td>
+          <td>6</td>
+          <td>ESXi, vCenter, vMotion, DRS, HA, FT, Content Library — 6+ with purpose</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>What is post-installation configuration of ESXi?</td>
+          <td>6</td>
+          <td>DCUI → Password → Management Network → NTP → DNS → Syslog — step flow</td>
+        </tr>
+      </table>
+    </div>
+    <div class="tip" style="margin-top:12px">
+      <div class="tip-icon">🎯</div>
+      <div class="tip-text"><b>Strategy:</b> Q1 from Unit I = SET A or SET B — each with 2 sub-questions (6+6). ESXi architecture + installation methods OR vCenter/SSO + PSC are the most common pairings. Prepare both.</div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+</body>
+</html>
